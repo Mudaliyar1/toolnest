@@ -1,0 +1,15 @@
+{
+  "script": "src/server.js",
+  "exec": "node",
+  "watch": [
+    "src",
+    "package.json"
+  ],
+  "ext": "js,ejs,json",
+  "ignore": [
+    "public",
+    "storage",
+    "logs",
+    "node_modules"
+  ]
+}

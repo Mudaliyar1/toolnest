@@ -1,0 +1,25 @@
+<% layout('layouts/main') -%>
+<section class="container py-5">
+  <div class="row mb-5">
+    <div class="col-lg-8">
+      <h1 class="display-6 fw-semibold text-dark mb-3">All Tool Categories</h1>
+      <p class="lead text-secondary">Browse our curated collection of professional utilities, developer toolkits, document managers, and financial calculators.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <% toolCatalog.forEach((category) => { %>
+      <div class="col-md-6 col-lg-4 col-xl-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body p-4 d-flex flex-column justify-content-between">
+            <div>
+              <h2 class="h5 fw-semibold text-dark mb-2"><%= category.title %></h2>
+              <p class="text-secondary small mb-4"><%= category.description %></p>
+            </div>
+            <a href="/categories/<%= category.key %>" class="btn btn-outline-primary w-100 mt-auto">Explore Tools</a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>

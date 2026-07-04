@@ -1,0 +1,27 @@
+<% layout('layouts/main') -%>
+<section class="container py-5 py-lg-6">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-5">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-lg-5">
+          <p class="text-uppercase small fw-semibold text-primary mb-2">Restricted access</p>
+          <h1 class="h3 fw-semibold mb-2">Secure Admin Access</h1>
+          <p class="text-secondary mb-4">Enter the configured admin password to continue.</p>
+
+          <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+
+          <form method="post" class="vstack gap-3">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div>
+              <label class="form-label fw-semibold">Password</label>
+              <input type="password" name="password" autocomplete="current-password" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Continue</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

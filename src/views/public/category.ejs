@@ -1,0 +1,55 @@
+<% layout('layouts/main') -%>
+<section class="container py-5">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Home</a></li>
+      <li class="breadcrumb-item"><a href="/categories" class="text-decoration-none">Categories</a></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= category.title %></li>
+    </ol>
+  </nav>
+
+  <div class="row align-items-center mb-5">
+    <div class="col-lg-7">
+      <h1 class="display-6 fw-semibold text-dark mb-2"><%= category.title %></h1>
+      <p class="lead text-secondary mb-0"><%= category.description %></p>
+    </div>
+    <div class="col-lg-5 mt-4 mt-lg-0">
+      <input type="text" id="categorySearch" class="form-control" placeholder="Search within <%= category.title.toLowerCase() %>...">
+    </div>
+  </div>
+
+  <div class="row g-3" id="toolGrid">
+    <% category.tools.forEach((tool) => { %>
+      <div class="col-md-6 col-lg-4 tool-card-wrapper">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body p-4">
+            <h2 class="h5 fw-semibold text-dark mb-3"><%= tool.name %></h2>
+            <p class="text-secondary small mb-4">Fast, client-server secure processing engine for <%= tool.name.toLowerCase() %>.</p>
+            <a href="/tools/<%= tool.slug %>" class="btn btn-outline-primary btn-sm">Open Tool</a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('categorySearch');
+    const cards = document.querySelectorAll('.tool-card-wrapper');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        cards.forEach((card) => {
+          const title = card.querySelector('h2').textContent.toLowerCase();
+          if (title.includes(query)) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    }
+  });
+</script>

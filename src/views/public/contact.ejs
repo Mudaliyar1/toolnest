@@ -1,0 +1,32 @@
+<% layout('layouts/main') -%>
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-lg-5">
+          <h1 class="h3 fw-semibold text-dark mb-2">Contact Us</h1>
+          <% if (success) { %>
+            <div class="alert alert-success mb-4"><%= success %></div>
+          <% } %>
+
+          <form action="/contact" method="POST" class="vstack gap-3">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div>
+              <label class="form-label fw-semibold">Your Name</label>
+              <input type="text" name="name" required class="form-control" placeholder="Jane Doe">
+            </div>
+            <div>
+              <label class="form-label fw-semibold">Email Address</label>
+              <input type="email" name="email" required class="form-control" placeholder="jane@example.com">
+            </div>
+            <div>
+              <label class="form-label fw-semibold">Message</label>
+              <textarea name="message" rows="5" required class="form-control" placeholder="Write your message here..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

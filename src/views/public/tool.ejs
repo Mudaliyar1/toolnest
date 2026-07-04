@@ -1,0 +1,117 @@
+<% layout('layouts/main') -%>
+<section class="container py-5 py-lg-6">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xxl-10">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-lg-5">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-end">
+            <div>
+              <p class="text-uppercase small fw-semibold text-primary mb-2"><%= tool.categoryTitle %></p>
+              <h1 class="display-6 fw-semibold mb-2"><%= tool.name %></h1>
+              <p class="text-secondary mb-0">Use the shared form below. The processor routes the request to the correct utility engine based on the tool slug.</p>
+            </div>
+          </div>
+
+          <form class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Text / Input</label>
+              <textarea name="text" rows="5" class="form-control"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Upload files</label>
+              <input type="file" name="files" multiple class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Mode</label>
+              <input type="text" name="mode" class="form-control" placeholder="upper, lower, title">
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <label class="form-label fw-semibold">Value</label>
+              <input type="text" name="value" class="form-control">
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <label class="form-label fw-semibold">Pages</label>
+              <input type="text" name="pages" class="form-control" placeholder="1,3-5">
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <label class="form-label fw-semibold">Quantity / Length</label>
+              <input type="number" name="length" min="1" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Width</label>
+              <input type="number" name="width" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Height</label>
+              <input type="number" name="height" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Rotation</label>
+              <input type="number" name="rotation" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Start</label>
+              <input type="text" name="start" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">End</label>
+              <input type="text" name="end" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Speed / Volume</label>
+              <input type="text" name="speed" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Algorithm</label>
+              <input type="text" name="algorithm" class="form-control" placeholder="sha256, sha512, md5">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Pattern</label>
+              <input type="text" name="pattern" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Flags</label>
+              <input type="text" name="flags" class="form-control" placeholder="gim">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">From</label>
+              <input type="text" name="from" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">To</label>
+              <input type="text" name="to" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label fw-semibold">Watermark / Time</label>
+              <input type="text" name="watermark" class="form-control">
+            </div>
+            <div class="col-12 pt-2">
+              <button type="submit" class="btn btn-primary btn-lg">Run Tool</button>
+            </div>
+          </form>
+
+          <% if (result) { %>
+            <div class="card bg-light border-0 mt-4">
+              <div class="card-body">
+                <h2 class="h5 fw-semibold mb-3"><%= result.title %></h2>
+                <% if (result.kind === 'text') { %>
+                  <pre class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
+                <% } else if (result.kind === 'file') { %>
+                  <div class="d-grid gap-2">
+                    <% resultRecords.forEach((file) => { %>
+                      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
+                        <div class="fw-medium"><%= file.processedName %></div>
+                        <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm">Download</a>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
