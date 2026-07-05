@@ -1,4 +1,90 @@
 <% layout('layouts/main') -%>
+<%
+  const slug = tool.slug;
+  const getToolDescription = (slug) => {
+    const descriptions = {
+      'merge-pdf': 'Combine two or more PDF files into a single, cohesive document in seconds.',
+      'split-pdf': 'Extract specific page ranges or save all pages individually as separate PDF files.',
+      'compress-pdf': 'Reduce the file size of your PDF document while keeping maximum visual quality.',
+      'unlock-pdf': 'Remove passwords, copy restrictions, security bounds, and encryption from your PDF.',
+      'protect-pdf': 'Secure your PDF document with strong password encryption to restrict unauthorized access.',
+      'rotate-pdf': 'Rotate page orientation (90, 180, or 270 degrees) of your PDF document.',
+      'extract-pages': 'Select and extract specific pages from your PDF file into a new document.',
+      'delete-pages': 'Remove unwanted pages from your PDF document and download the remaining pages.',
+      'add-watermark': 'Add a clean, customizable text watermark overlay onto your PDF document.',
+      'pdf-to-image': 'Convert the first page of your PDF file into a high-quality preview PNG image.',
+      'image-to-pdf': 'Convert multiple image files (JPG, PNG, WEBP) into a single, clean PDF file.',
+      'pdf-page-numbering': 'Add sequential page numbers to your PDF pages automatically.',
+      'compress-image': 'Reduce image file size by modifying visual quality parameters.',
+      'resize-image': 'Change the width and height dimensions of your image in pixels.',
+      'crop-image': 'Crop specific rectangular regions from your image by specifying dimensions.',
+      'convert-jpg': 'Convert PNG, WEBP, or SVG images into a high-quality JPG image format.',
+      'convert-png': 'Convert JPG, WEBP, or SVG images into a lossless PNG image format.',
+      'convert-webp': 'Convert JPG, PNG, or SVG images into the highly optimized WebP format.',
+      'watermark-image': 'Overlay custom signature text onto your image file.',
+      'blur-image': 'Apply a custom gaussian blur intensity filter to your image.',
+      'background-removal': 'Remove solid color backgrounds from your images using sensitivity thresholds.',
+      'image-upscaler': 'Upscale and improve the size of your images using high-quality filters.',
+      'thumbnail-generator': 'Instantly scale and crop any image into standard square thumbnails.',
+      'color-extractor': 'Analyze and extract the top 5 dominant Hex colors from any uploaded image.',
+      'video-compressor': 'Optimize and reduce the size of your video files.',
+      'video-trimmer': 'Trim and extract custom segments of your video using start and end timestamps.',
+      'video-merger': 'Combine multiple video files together into a single sequential video clip.',
+      'video-resolution-changer': 'Change the resolution (width and height) of your video file.',
+      'video-to-gif': 'Convert a video clip into an animated GIF with custom FPS.',
+      'gif-to-video': 'Convert animated GIFs into standard, playable MP4 videos.',
+      'thumbnail-extractor': 'Extract and save a high-quality frame thumbnail at a specific second.',
+      'video-metadata-viewer': 'View all technical formats, codec details, streams, and properties of your video.',
+      'video-mute-tool': 'Remove and strip the audio tracks completely from any video file.',
+      'video-speed-controller': 'Speed up or slow down video playback speeds.',
+      'audio-converter': 'Convert any audio file format to MP3, WAV, AAC, or M4A.',
+      'mp3-cutter': 'Trim and cut audio clips using start and end timestamps.',
+      'audio-merger': 'Concatenate multiple audio files into a single continuous soundtrack.',
+      'volume-booster': 'Amplify and boost the volume decibel levels of your audio file.',
+      'audio-speed-changer': 'Change playback speed of your audio file without pitch distortion.',
+      'audio-metadata-viewer': 'Inspect standard ID3 tags, artist, album, and format info from your audio file.',
+      'audio-compressor': 'Optimize and compress audio files to save storage space.',
+      'json-formatter': 'Clean, indent, and format JSON code to make it human-readable.',
+      'json-validator': 'Validate JSON strings and locate potential syntax errors.',
+      'base64-encoder': 'Encode standard text or data strings into Base64 format.',
+      'base64-decoder': 'Decode Base64 encoded strings back to plain readable text.',
+      'url-encoder': 'Encode special characters in URLs to make them safe for web requests.',
+      'url-decoder': 'Decode URL-encoded query strings back to normal text.',
+      'jwt-decoder': 'Decode and inspect JSON Web Token header and payload data without verification.',
+      'uuid-generator': 'Generate standard v4 universally unique identifiers (UUIDs) instantly.',
+      'regex-tester': 'Test regular expressions against custom input text to verify matches.',
+      'sql-formatter': 'Format complex SQL queries to align SELECT, JOIN, and WHERE clauses.',
+      'html-formatter': 'Beautify HTML templates with correct tab-spacing and tags indentation.',
+      'css-minifier': 'Compress and minify stylesheet rules to reduce payload size.',
+      'javascript-minifier': 'Minify and optimize JavaScript files to reduce download times.',
+      'hash-generator': 'Generate MD5, SHA-256, or SHA-512 hashes from input strings.',
+      'cgpa-calculator': 'Calculate cumulative grade point average (CGPA) from semester scores.',
+      'sgpa-calculator': 'Calculate semester grade point average (SGPA) by credit hours and grades.',
+      'attendance-calculator': 'Calculate your class attendance percentage and track minimum thresholds.',
+      'percentage-calculator': 'Quickly calculate fraction percentages and value ratios.',
+      'study-timer': 'Start study timer blocks utilizing Pomodoro style deep work rules.',
+      'gpa-predictor': 'Predict required semester GPAs to meet your target CGPA goal.',
+      'gst-calculator': 'Calculate standard GST tax rates (5%, 12%, 18%, 28%) added or subtracted.',
+      'emi-calculator': 'Calculate monthly loan installments (EMI) using Principal, Rate, and Tenure.',
+      'invoice-generator': 'Generate clear invoices listing items, prices, and total amounts.',
+      'profit-calculator': 'Calculate gross/net profits based on total revenue and costs.',
+      'margin-calculator': 'Calculate gross profit margin percentage from revenue and profits.',
+      'discount-calculator': 'Calculate marked-down prices and savings from discount percentages.',
+      'loan-calculator': 'Calculate loan interest rates, total repayment, and amortization.',
+      'qr-generator': 'Generate customizable QR codes for links, text, or phone numbers.',
+      'barcode-generator': 'Generate printable barcode symbols (Code 128 / EAN-13) from raw data.',
+      'password-generator': 'Generate secure, random passwords with customizable parameters.',
+      'password-strength-checker': 'Analyze password security strength and entropy levels.',
+      'age-calculator': 'Calculate exact age down to years, months, and days from date of birth.',
+      'unit-converter': 'Convert between length, mass, and temperature units.',
+      'currency-converter': 'Convert currency exchange values using current exchange rates.',
+      'random-generator': 'Generate cryptographically secure random values and strings.',
+      'text-case-converter': 'Convert text to UPPERCASE, lowercase, or Title Case.',
+      'word-counter': 'Count characters, words, sentences, and paragraphs in your text.'
+    };
+    return descriptions[slug] || 'Run this tool with customized parameters below.';
+  };
+%>
 <section class="container py-5 py-lg-6">
   <div class="row justify-content-center">
     <div class="col-12 col-xxl-10">
@@ -8,12 +94,11 @@
             <div>
               <p class="text-uppercase small fw-semibold text-primary mb-2"><%= tool.categoryTitle %></p>
               <h1 class="display-6 fw-semibold mb-2"><%= tool.name %></h1>
-              <p class="text-secondary mb-0">Use the shared form below. The processor routes the request to the correct utility engine based on the tool slug.</p>
+              <p class="text-secondary mb-0"><%= getToolDescription(slug) %></p>
             </div>
           </div>
 
 <%
-  const slug = tool.slug;
   const showField = (field) => {
     // PDF Tools
     if (['merge-pdf', 'split-pdf', 'compress-pdf', 'pdf-page-numbering', 'image-to-pdf'].includes(slug)) {
@@ -290,8 +375,13 @@
             <!-- File Upload Input (Common to PDF/Image/Video/Audio files) -->
             <% if (['pdf', 'image', 'video', 'audio'].includes(tool.category)) { %>
               <div class="col-md-12">
-                <label class="form-label fw-semibold">Upload File(s)</label>
+                <label class="form-label fw-semibold">
+                  <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'Upload Multiple Files (Select 2 or more)' : 'Upload File' %>
+                </label>
                 <input type="file" name="files" <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'multiple' : '' %> class="form-control" required>
+                <% if (['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug)) { %>
+                  <div class="form-text text-muted">💡 Tip: You can select and upload multiple files at once using <strong>Ctrl/Cmd</strong> or <strong>Shift</strong> key.</div>
+                <% } %>
               </div>
             <% } %>
 
@@ -716,7 +806,7 @@
                       <% resultRecords.forEach((file) => { %>
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
                           <div class="fw-medium"><%= file.processedName %></div>
-                          <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm">Download</a>
+                          <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm" download="<%= file.processedName %>">Download</a>
                         </div>
                       <% }) %>
                     </div>

@@ -532,31 +532,104 @@ async function processPdfTool(slug, files, body, outputDir) {
   }
 
   if (slug === 'merge-pdf') {
-    const merged = await PDFDocument.create();
-    for (const file of pdfFiles) {
-      const doc = await loadPdfSafely(file.path, body.password);
-      const copied = await merged.copyPages(doc, doc.getPageIndices());
-      copied.forEach((page) => merged.addPage(page));
-    }
+    const muhammara = require('muhammara');
     const fileName = createStorageName('merged.pdf', '.pdf');
     const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await merged.save({ useObjectStreams: true }));
+    const writer = muhammara.createWriter(filePath);
+    const tempFilesToCleanup = [];
+
+    try {
+      for (const file of pdfFiles) {
+        let pathToUse = file.path;
+        const buffer = await fs.readFile(file.path);
+        let isEncrypted = false;
+        try {
+          await PDFDocument.load(buffer);
+        } catch (err) {
+          if (err.message.includes('encrypted') || err.message.includes('password') || err.message.includes('parse')) {
+            isEncrypted = true;
+          }
+        }
+
+        if (isEncrypted) {
+          const cleanPassword = String(body.password || '').trim();
+          if (!cleanPassword) {
+            throw new Error('One of the PDFs is encrypted. Please provide the decryption password.');
+          }
+          const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
+          const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+          const decryptedTempPath = file.path + '.decrypted.pdf';
+          await fs.writeFile(decryptedTempPath, Buffer.from(decryptedBytes));
+          tempFilesToCleanup.push(decryptedTempPath);
+          pathToUse = decryptedTempPath;
+        }
+
+        writer.appendPDFPagesFromPDF(pathToUse);
+      }
+      writer.end();
+    } catch (err) {
+      try { writer.end(); } catch (e) {}
+      throw err;
+    } finally {
+      for (const tempPath of tempFilesToCleanup) {
+        await fs.unlink(tempPath).catch(() => {});
+      }
+    }
+
     return { kind: 'file', title: 'Merged PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
   }
 
   if (slug === 'split-pdf') {
-    const doc = await loadPdfSafely(pdfFiles[0].path, body.password);
+    const muhammara = require('muhammara');
+    const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
+    const buffer = await fs.readFile(pdfFiles[0].path);
+    let pathToUse = pdfFiles[0].path;
+    const tempFilesToCleanup = [];
+
+    let isEncrypted = false;
+    let doc;
+    try {
+      doc = await PDFDocument.load(buffer);
+    } catch (err) {
+      if (err.message.includes('encrypted') || err.message.includes('password') || err.message.includes('parse')) {
+        isEncrypted = true;
+      }
+    }
+
+    if (isEncrypted) {
+      const cleanPassword = String(body.password || '').trim();
+      if (!cleanPassword) {
+        throw new Error('This PDF is encrypted. Please provide the decryption password.');
+      }
+      const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+      const decryptedTempPath = pdfFiles[0].path + '.decrypted.pdf';
+      await fs.writeFile(decryptedTempPath, Buffer.from(decryptedBytes));
+      tempFilesToCleanup.push(decryptedTempPath);
+      pathToUse = decryptedTempPath;
+      doc = await PDFDocument.load(decryptedBytes);
+    }
+
     const pages = doc.getPageCount();
     const splitOutputs = [];
 
-    for (let index = 0; index < pages; index += 1) {
-      const splitDoc = await PDFDocument.create();
-      const [page] = await splitDoc.copyPages(doc, [index]);
-      splitDoc.addPage(page);
-      const fileName = `page-${index + 1}.pdf`;
-      const filePath = path.join(outputDir, fileName);
-      await fs.writeFile(filePath, await splitDoc.save({ useObjectStreams: true }));
-      splitOutputs.push({ path: filePath, name: fileName });
+    try {
+      for (let index = 0; index < pages; index += 1) {
+        const fileName = `page-${index + 1}.pdf`;
+        const filePath = path.join(outputDir, fileName);
+        const writer = muhammara.createWriter(filePath);
+        writer.appendPDFPagesFromPDF(pathToUse, {
+          type: muhammara.eRangeTypeSpecific,
+          specificRanges: [[index, index]]
+        });
+        writer.end();
+        splitOutputs.push({ path: filePath, name: fileName });
+      }
+    } catch (err) {
+      throw err;
+    } finally {
+      for (const tempPath of tempFilesToCleanup) {
+        await fs.unlink(tempPath).catch(() => {});
+      }
     }
 
     const zipName = createStorageName('split-pages.zip', '.zip');
@@ -583,59 +656,110 @@ async function processPdfTool(slug, files, body, outputDir) {
     return { kind: 'file', title: 'Rotated PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
   }
 
-  const pdfSource = await loadPdfSafely(pdfFiles[0].path, body.password);
-  const totalPages = pdfSource.getPageCount();
-  const selectedPages = parsePdfPages(body.pages, totalPages);
+  const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
+  const buffer = await fs.readFile(pdfFiles[0].path);
+  let pathToUse = pdfFiles[0].path;
+  const tempFilesToCleanup = [];
 
-  if (slug === 'extract-pages') {
-    const extracted = await PDFDocument.create();
-    const copied = await extracted.copyPages(pdfSource, selectedPages.map((page) => page - 1));
-    copied.forEach((page) => extracted.addPage(page));
-    const fileName = createStorageName('extracted.pdf', '.pdf');
-    const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await extracted.save({ useObjectStreams: true }));
-    return { kind: 'file', title: 'Extracted Pages', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+  let isEncrypted = false;
+  let pdfSource;
+  try {
+    pdfSource = await PDFDocument.load(buffer);
+  } catch (err) {
+    if (err.message.includes('encrypted') || err.message.includes('password') || err.message.includes('parse')) {
+      isEncrypted = true;
+    }
   }
 
-  if (slug === 'delete-pages') {
-    const remaining = await PDFDocument.create();
-    const keepPages = Array.from({ length: totalPages }, (_, index) => index + 1).filter((page) => !selectedPages.includes(page));
-    const copied = await remaining.copyPages(pdfSource, keepPages.map((page) => page - 1));
-    copied.forEach((page) => remaining.addPage(page));
-    const fileName = createStorageName('pages-removed.pdf', '.pdf');
-    const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await remaining.save({ useObjectStreams: true }));
-    return { kind: 'file', title: 'Pages Deleted', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
-  }
+  try {
+    if (isEncrypted) {
+      const cleanPassword = String(body.password || '').trim();
+      if (!cleanPassword) {
+        throw new Error('This PDF is encrypted. Please provide the decryption password.');
+      }
+      const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+      const decryptedTempPath = pdfFiles[0].path + '.decrypted.pdf';
+      await fs.writeFile(decryptedTempPath, Buffer.from(decryptedBytes));
+      tempFilesToCleanup.push(decryptedTempPath);
+      pathToUse = decryptedTempPath;
+      pdfSource = await PDFDocument.load(decryptedBytes);
+    }
 
-  if (slug === 'add-watermark' || slug === 'pdf-page-numbering') {
-    const font = await pdfSource.embedFont(StandardFonts.Helvetica);
-    pdfSource.getPages().forEach((page, index) => {
-      if (slug === 'add-watermark') {
-        page.drawText(String(body.watermark || 'ToolNest'), {
-          x: 40,
-          y: page.getHeight() / 2,
-          size: 36,
-          font,
-          color: rgb(0.4, 0.4, 0.4),
-          opacity: 0.18,
-          rotate: { type: 'degrees', angle: 45 }
+    const totalPages = pdfSource.getPageCount();
+    const selectedPages = parsePdfPages(body.pages, totalPages);
+
+    if (slug === 'extract-pages') {
+      const muhammara = require('muhammara');
+      const fileName = createStorageName('extracted.pdf', '.pdf');
+      const filePath = path.join(outputDir, fileName);
+      const writer = muhammara.createWriter(filePath);
+      try {
+        const specificRanges = selectedPages.map((page) => [page - 1, page - 1]);
+        writer.appendPDFPagesFromPDF(pathToUse, {
+          type: muhammara.eRangeTypeSpecific,
+          specificRanges: specificRanges
         });
+        writer.end();
+      } catch (err) {
+        try { writer.end(); } catch (e) {}
+        throw err;
       }
-      if (slug === 'pdf-page-numbering') {
-        page.drawText(`${index + 1}`, {
-          x: page.getWidth() - 48,
-          y: 24,
-          size: 12,
-          font,
-          color: rgb(0.3, 0.3, 0.3)
+      return { kind: 'file', title: 'Extracted Pages', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+    }
+
+    if (slug === 'delete-pages') {
+      const muhammara = require('muhammara');
+      const fileName = createStorageName('pages-removed.pdf', '.pdf');
+      const filePath = path.join(outputDir, fileName);
+      const writer = muhammara.createWriter(filePath);
+      try {
+        const keepPages = Array.from({ length: totalPages }, (_, index) => index + 1).filter((page) => !selectedPages.includes(page));
+        const specificRanges = keepPages.map((page) => [page - 1, page - 1]);
+        writer.appendPDFPagesFromPDF(pathToUse, {
+          type: muhammara.eRangeTypeSpecific,
+          specificRanges: specificRanges
         });
+        writer.end();
+      } catch (err) {
+        try { writer.end(); } catch (e) {}
+        throw err;
       }
-    });
-    const fileName = createStorageName(`${slug}.pdf`, '.pdf');
-    const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await pdfSource.save({ useObjectStreams: true }));
-    return { kind: 'file', title: 'Processed PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+      return { kind: 'file', title: 'Pages Deleted', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+    }
+
+    if (slug === 'add-watermark' || slug === 'pdf-page-numbering') {
+      const font = await pdfSource.embedFont(StandardFonts.Helvetica);
+      pdfSource.getPages().forEach((page, index) => {
+        if (slug === 'add-watermark') {
+          page.drawText(String(body.watermark || 'ToolNest'), {
+            x: 40,
+            y: page.getHeight() / 2,
+            size: 36,
+            font,
+            color: rgb(0.4, 0.4, 0.4),
+            opacity: 0.18,
+            rotate: { type: 'degrees', angle: 45 }
+          });
+        }
+        if (slug === 'pdf-page-numbering') {
+          page.drawText(`${index + 1}`, {
+            x: page.getWidth() - 48,
+            y: 24,
+            size: 12,
+            font,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+        }
+      });
+      const fileName = createStorageName(`${slug}.pdf`, '.pdf');
+      const filePath = path.join(outputDir, fileName);
+      await fs.writeFile(filePath, await pdfSource.save({ useObjectStreams: true }));
+      return { kind: 'file', title: 'Processed PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+    }
+  } finally {
+    for (const tempPath of tempFilesToCleanup) {
+      await fs.unlink(tempPath).catch(() => {});
+    }
   }
 
   if (slug === 'image-to-pdf') {

@@ -30,7 +30,13 @@ async function downloadFile(req, res, next) {
     }
 
     if (file.cloudinaryUrl) {
-      return res.redirect(file.cloudinaryUrl);
+      let downloadUrl = file.cloudinaryUrl;
+      if (downloadUrl.includes('/upload/')) {
+        const baseName = path.basename(file.processedName || 'download', path.extname(file.processedName || ''));
+        const cleanName = baseName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        downloadUrl = downloadUrl.replace('/upload/', `/upload/fl_attachment:${cleanName}/`);
+      }
+      return res.redirect(downloadUrl);
     }
     return res.download(file.storagePath, file.processedName || path.basename(file.storagePath));
   } catch (error) {
