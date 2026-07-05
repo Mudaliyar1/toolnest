@@ -51,8 +51,9 @@ async function writeBuffer(outputDir, fileName, buffer) {
 
 async function zipFiles(targetPath, files) {
   return new Promise((resolve, reject) => {
+    const { ZipArchive } = require('archiver');
     const output = require('fs').createWriteStream(targetPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     output.on('close', () => resolve(targetPath));
     archive.on('warning', reject);
@@ -368,11 +369,44 @@ async function processImageTool(slug, file, body, outputDir) {
   let mimeType = 'image/png';
 
   switch (slug) {
-    case 'compress-image':
-      pipeline = pipeline.jpeg({ quality: Math.min(Math.max(Number.parseInt(body.quality, 10) || 80, 20), 95) });
+    case 'compress-image': {
+      const targetSize = Number.parseFloat(body.targetSize || 0);
+      const targetUnit = String(body.targetUnit || 'KB').toUpperCase();
+      let targetBytes = targetSize * 1024;
+      if (targetUnit === 'MB') {
+        targetBytes = targetSize * 1024 * 1024;
+      }
+      
+      if (targetBytes > 0) {
+        let finalBuffer = null;
+        for (let s = 1.0; s >= 0.01; s -= 0.1) {
+          const img = sharp(file.path);
+          if (s < 1.0) {
+            const meta = await img.metadata();
+            img.resize(Math.round(meta.width * s) || 10);
+          }
+          
+          for (let q = 90; q >= 5; q -= 10) {
+            finalBuffer = await img.clone().jpeg({ quality: q }).toBuffer();
+            if (finalBuffer.length <= targetBytes) {
+              break;
+            }
+          }
+          if (finalBuffer.length <= targetBytes) {
+            break;
+          }
+        }
+        const fileName = createStorageName('compressed-image.jpg', '.jpg');
+        const filePath = path.join(outputDir, fileName);
+        await fs.writeFile(filePath, finalBuffer);
+        return { kind: 'file', title: 'Compressed Image', files: [{ path: filePath, name: fileName, mimeType: 'image/jpeg' }] };
+      }
+      
+      pipeline = pipeline.jpeg({ quality: 80 });
       extension = '.jpg';
       mimeType = 'image/jpeg';
       break;
+    }
     case 'resize-image':
       pipeline = pipeline.resize({ width: Number.parseInt(body.width, 10) || null, height: Number.parseInt(body.height, 10) || null, fit: 'inside' });
       break;
@@ -639,10 +673,57 @@ async function processPdfTool(slug, files, body, outputDir) {
   }
 
   if (slug === 'compress-pdf') {
-    const doc = await loadPdfSafely(pdfFiles[0].path, body.password);
+    const targetSize = Number.parseFloat(body.targetSize || 0);
+    const targetUnit = String(body.targetUnit || 'KB').toUpperCase();
+    let targetBytes = targetSize * 1024;
+    if (targetUnit === 'MB') {
+      targetBytes = targetSize * 1024 * 1024;
+    }
+
+    const { compress } = require('compress-pdf');
     const fileName = createStorageName('compressed.pdf', '.pdf');
     const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await doc.save({ useObjectStreams: true }));
+
+    let compressedBytes = null;
+
+    if (targetBytes > 0) {
+      const settings = [
+        { resolution: 'ebook', imageQuality: 150 },
+        { resolution: 'ebook', imageQuality: 100 },
+        { resolution: 'screen', imageQuality: 72 },
+        { resolution: 'screen', imageQuality: 50 },
+        { resolution: 'screen', imageQuality: 30 },
+        { resolution: 'screen', imageQuality: 15 }
+      ];
+
+      for (const setting of settings) {
+        try {
+          const resBuffer = await compress(pdfFiles[0].path, {
+            resolution: setting.resolution,
+            imageQuality: setting.imageQuality
+          });
+          compressedBytes = resBuffer;
+          if (resBuffer.length <= targetBytes) {
+            break;
+          }
+        } catch (err) {
+          // If a configuration fails, skip and proceed
+        }
+      }
+    }
+
+    if (!compressedBytes) {
+      try {
+        compressedBytes = await compress(pdfFiles[0].path, {
+          resolution: 'screen',
+          imageQuality: 50
+        });
+      } catch (err) {
+        compressedBytes = await fs.readFile(pdfFiles[0].path);
+      }
+    }
+
+    await fs.writeFile(filePath, compressedBytes);
     return { kind: 'file', title: 'Compressed PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
   }
 
@@ -791,9 +872,74 @@ async function processVideoTool(slug, files, body, outputDir) {
   const args = [];
 
   switch (slug) {
-    case 'video-compressor':
-      args.push('-y', '-i', source.path, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28', '-c:a', 'aac', outputPath);
+    case 'video-compressor': {
+      const probe = await ffprobeJson(source.path);
+      const metadata = JSON.parse(probe.stdout);
+      const duration = Number.parseFloat(metadata.format ? metadata.format.duration : 10) || 10;
+      
+      const targetSize = Number.parseFloat(body.targetSize || 2);
+      const targetUnit = String(body.targetUnit || 'MB').toUpperCase();
+      let targetBytes = targetSize * 1024;
+      if (targetUnit === 'MB') {
+        targetBytes = targetSize * 1024 * 1024;
+      }
+      
+      const totalBits = targetBytes * 8;
+      const totalBitrate = totalBits / duration;
+      
+      let audioBitrate = 128000;
+      let videoBitrate = totalBitrate - audioBitrate;
+
+      args.push('-y', '-i', source.path);
+
+      if (totalBitrate < 40000) {
+        // If target size is tiny, drop audio track entirely to save bits
+        args.push('-an');
+        videoBitrate = totalBitrate;
+        if (videoBitrate < 4000) {
+          videoBitrate = 4000; // Absolute minimum 4 kbps
+        }
+        args.push('-vf', 'scale=120:-2');
+      } else {
+        if (totalBitrate < 160000) {
+          audioBitrate = 32000;
+        }
+        if (totalBitrate < 64000) {
+          audioBitrate = 16000;
+        }
+        if (totalBitrate < 32000) {
+          audioBitrate = 8000;
+        }
+        
+        videoBitrate = totalBitrate - audioBitrate;
+        if (videoBitrate < 15000) {
+          videoBitrate = 15000;
+        }
+
+        if (videoBitrate < 120000) {
+          args.push('-vf', 'scale=240:-2');
+        } else if (videoBitrate < 300000) {
+          args.push('-vf', 'scale=480:-2');
+        } else if (videoBitrate < 800000) {
+          args.push('-vf', 'scale=720:-2');
+        }
+
+        const audioBitrateKbps = Math.round(audioBitrate / 1000);
+        args.push('-c:a', 'aac', '-b:a', `${audioBitrateKbps}k`);
+      }
+
+      const videoBitrateKbps = Math.round(videoBitrate / 1000);
+
+      args.push(
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-b:v', `${videoBitrateKbps}k`,
+        '-maxrate', `${videoBitrateKbps}k`,
+        '-bufsize', `${videoBitrateKbps * 2}k`,
+        outputPath
+      );
       break;
+    }
     case 'video-trimmer':
       args.push('-y', '-ss', String(body.start || '0'), '-to', String(body.end || '10'), '-i', source.path, '-c', 'copy', outputPath);
       break;
@@ -870,9 +1016,40 @@ async function processAudioTool(slug, files, body, outputDir) {
       const metadata = await musicMetadata.parseFile(source.path, { duration: true });
       return { kind: 'text', title: 'Audio Metadata', content: JSON.stringify(metadata.common, null, 2) };
     }
-    case 'audio-compressor':
-      args.push('-y', '-i', source.path, '-codec:a', 'libmp3lame', '-b:a', '128k', outputPath);
+    case 'audio-compressor': {
+      const probe = await ffprobeJson(source.path);
+      const metadata = JSON.parse(probe.stdout);
+      const duration = Number.parseFloat(metadata.format ? metadata.format.duration : 30) || 30;
+      
+      const targetSize = Number.parseFloat(body.targetSize || 500);
+      const targetUnit = String(body.targetUnit || 'KB').toUpperCase();
+      let targetBytes = targetSize * 1024;
+      if (targetUnit === 'MB') {
+        targetBytes = targetSize * 1024 * 1024;
+      }
+      
+      const totalBits = targetBytes * 8;
+      let audioBitrate = totalBits / duration;
+      if (audioBitrate < 8000) {
+        audioBitrate = 8000; // Min 8 kbps
+      }
+      if (audioBitrate > 320000) {
+        audioBitrate = 320000; // Max 320 kbps for MP3
+      }
+      const audioBitrateKbps = Math.round(audioBitrate / 1000);
+
+      args.push('-y', '-i', source.path);
+      if (audioBitrate < 48000) {
+        args.push('-ac', '1'); // Convert to Mono for low bitrates
+        args.push('-ar', '8000'); // Resample to 8kHz
+      }
+      args.push(
+        '-codec:a', 'libmp3lame',
+        '-b:a', `${audioBitrateKbps}k`,
+        outputPath
+      );
       break;
+    }
     default:
       throw new Error('This audio tool is not wired yet.');
   }

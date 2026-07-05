@@ -12,6 +12,7 @@ const fileSchema = new mongoose.Schema(
     storagePath: { type: String },
     cloudinaryPublicId: { type: String, index: true },
     cloudinaryUrl: { type: String },
+    cloudinaryResourceType: { type: String },
     toolName: { type: String, required: true, index: true },
     direction: { type: String, enum: ['input', 'output'], default: 'output' }
   },

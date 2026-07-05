@@ -7,7 +7,7 @@
           <p class="text-uppercase small fw-semibold text-primary mb-2">Admin dashboard</p>
           <h1 class="display-6 fw-semibold mb-2">System Overview</h1>
         </div>
-        <form method="post" action="/secure-admin-access/logout">
+        <form method="post" action="<%= adminAccessPath %>/logout">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button type="submit" class="btn btn-outline-secondary">Sign out</button>
         </form>

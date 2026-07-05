@@ -369,19 +369,50 @@
   };
 %>
 
-          <form class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
+          <form id="tool-execution-form" class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
             <!-- File Upload Input (Common to PDF/Image/Video/Audio files) -->
             <% if (['pdf', 'image', 'video', 'audio'].includes(tool.category)) { %>
+              <% 
+                let acceptTypes = '';
+                if (slug === 'image-to-pdf') {
+                  acceptTypes = 'image/*';
+                } else if (slug === 'gif-to-video') {
+                  acceptTypes = 'image/gif,video/*';
+                } else if (tool.category === 'pdf') {
+                  acceptTypes = '.pdf';
+                } else if (tool.category === 'image') {
+                  acceptTypes = 'image/*';
+                } else if (tool.category === 'video') {
+                  acceptTypes = 'video/*';
+                } else if (tool.category === 'audio') {
+                  acceptTypes = 'audio/*';
+                }
+              %>
               <div class="col-md-12">
                 <label class="form-label fw-semibold">
                   <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'Upload Multiple Files (Select 2 or more)' : 'Upload File' %>
                 </label>
-                <input type="file" name="files" <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'multiple' : '' %> class="form-control" required>
+                <input type="file" name="files" id="media-file-input" <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'multiple' : '' %> accept="<%= acceptTypes %>" class="form-control" required>
                 <% if (['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug)) { %>
-                  <div class="form-text text-muted">💡 Tip: You can select and upload multiple files at once using <strong>Ctrl/Cmd</strong> or <strong>Shift</strong> key.</div>
+                  <div class="form-text text-muted mb-2">💡 Tip: You can select and upload multiple files at once using <strong>Ctrl/Cmd</strong> or <strong>Shift</strong> key.</div>
                 <% } %>
+                
+                <!-- Media Preview Card -->
+                <div id="media-preview-container" class="mt-3 d-none">
+                  <div class="card border rounded-3 p-3 bg-white shadow-sm" style="max-width: 500px; margin: 0 auto;">
+                    <div class="d-flex flex-column align-items-center text-center gap-3">
+                      <div id="preview-thumbnail-wrapper" style="width: 100%; min-height: 200px; max-height: 350px; overflow: hidden; border-radius: 8px;" class="bg-light d-flex align-items-center justify-content-center border">
+                        <!-- Preview content injected via script -->
+                      </div>
+                      <div class="w-100 border-top pt-2">
+                        <div id="preview-filename" class="fw-bold text-break text-dark" style="font-size: 1.1rem;"></div>
+                        <div id="preview-filesize" class="small text-secondary mt-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             <% } %>
 
@@ -417,13 +448,16 @@
               </div>
             <% } %>
 
-            <% if (slug === 'compress-pdf') { %>
-              <div class="col-md-12">
-                <label class="form-label fw-semibold">Compression Ratio</label>
-                <select name="value" class="form-select">
-                  <option value="40">Low Compression (Highest Visual Quality)</option>
-                  <option value="70" selected>Medium Compression (Recommended Balance)</option>
-                  <option value="90">High Compression (Smallest File Size)</option>
+            <% if (['compress-pdf', 'compress-image', 'video-compressor', 'audio-compressor'].includes(slug)) { %>
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Target File Size</label>
+                <input type="number" name="targetSize" min="1" step="any" class="form-control" placeholder="e.g. 500" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Size Unit</label>
+                <select name="targetUnit" class="form-select">
+                  <option value="KB" selected>KB (Kilobytes)</option>
+                  <option value="MB">MB (Megabytes)</option>
                 </select>
               </div>
             <% } %>
@@ -461,22 +495,12 @@
             <% } %>
 
             <!-- 2. Image Options -->
-            <% if (slug === 'compress-image') { %>
-              <div class="col-md-12">
-                <label class="form-label fw-semibold">Image Compression Quality</label>
-                <div class="d-flex align-items-center gap-3">
-                  <input type="range" name="value" min="10" max="95" value="80" class="form-range" oninput="this.nextElementSibling.value = this.value + '%'">
-                  <output class="fw-semibold text-primary" style="min-width: 45px;">80%</output>
-                </div>
-              </div>
-            <% } %>
-
             <% if (slug === 'blur-image') { %>
               <div class="col-md-12">
                 <label class="form-label fw-semibold">Blur Radius (Sigma)</label>
                 <div class="d-flex align-items-center gap-3">
-                  <input type="range" name="value" min="1" max="50" value="8" class="form-range" oninput="this.nextElementSibling.value = this.value">
-                  <output class="fw-semibold text-primary" style="min-width: 30px;">8</output>
+                  <input type="range" name="value" min="1" max="50" value="8" class="form-range" oninput="this.nextElementSibling.value = this.value + ' px'">
+                  <output class="fw-semibold text-primary" style="min-width: 30px;">8 px</output>
                 </div>
               </div>
             <% } %>
@@ -576,8 +600,8 @@
               <div class="col-md-12">
                 <label class="form-label fw-semibold">Length</label>
                 <div class="d-flex align-items-center gap-3">
-                  <input type="range" name="length" min="6" max="128" value="16" class="form-range" oninput="this.nextElementSibling.value = this.value">
-                  <output class="fw-semibold text-primary" style="min-width: 30px;">16</output>
+                  <input type="range" name="length" min="6" max="128" value="16" class="form-range" oninput="this.nextElementSibling.value = this.value + ' characters'">
+                  <output class="fw-semibold text-primary" style="min-width: 30px;">16 characters</output>
                 </div>
               </div>
             <% } %>
@@ -784,8 +808,24 @@
               </div>
             <% } %>
 
+            <div id="validation-error-message" class="col-12 text-danger fw-semibold mt-2 d-none"></div>
+
             <div class="col-12 pt-3">
-              <button type="submit" class="btn btn-primary btn-lg px-5">Run Tool</button>
+              <button type="submit" id="submit-run-tool" class="btn btn-primary btn-lg px-5">Run Tool</button>
+              
+              <!-- Real-time Upload Progress Bar -->
+              <div id="upload-progress-container" class="mt-3 d-none">
+                <div class="small text-secondary mb-1 d-flex justify-content-between">
+                  <div>
+                    <span>Uploading files to server...</span>
+                    <span id="upload-status-details" class="ms-2 text-muted fw-normal"></span>
+                  </div>
+                  <span id="upload-percentage" class="fw-semibold">0%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;"></div>
+                </div>
+              </div>
             </div>
           </form>
 
@@ -802,6 +842,10 @@
                   <% if (result.kind === 'text') { %>
                     <pre class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
                   <% } else if (result.kind === 'file') { %>
+                    <div class="alert alert-success border-0 shadow-sm mb-3 d-flex align-items-center gap-2" role="alert">
+                      <span style="font-size: 1.3rem;">✅</span>
+                      <div><strong>Success!</strong> File processed. Now you can download the file below.</div>
+                    </div>
                     <div class="d-grid gap-2">
                       <% resultRecords.forEach((file) => { %>
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
@@ -815,8 +859,35 @@
               </div>
             <% } %>
           <% } %>
+          
+          <!-- Professional About / FAQ Section at the bottom of card -->
+          <div class="border-top mt-5 pt-4">
+            <h3 class="h5 fw-bold text-dark mb-3">About <%= tool.name %></h3>
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="d-flex gap-3">
+                  <div class="text-primary fs-4">⚙️</div>
+                  <div>
+                    <h4 class="h6 fw-semibold text-dark mb-1">What does it do?</h4>
+                    <p class="small text-secondary mb-0"><%= getToolDescription(slug) %></p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex gap-3">
+                  <div class="text-primary fs-4">🔒</div>
+                  <div>
+                    <h4 class="h6 fw-semibold text-dark mb-1">Secure & Private</h4>
+                    <p class="small text-secondary mb-0">Your files are processed locally and securely. No data is stored or shared without your permission.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<script src="/js/tool.js" defer></script>

@@ -36,7 +36,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+      mediaSrc: ["'self'", 'blob:'],
       fontSrc: ["'self'", 'data:'],
       connectSrc: ["'self'"],
       frameAncestors: ["'none'"]
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
   res.locals.siteName = env.siteName;
   res.locals.siteUrl = env.siteUrl;
   res.locals.currentPath = req.path || '/';
+  res.locals.adminAccessPath = env.adminAccessPath;
   next();
 });
 

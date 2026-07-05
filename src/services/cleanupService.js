@@ -17,19 +17,37 @@ async function removeExpiredFilesAndWorkspaces() {
   const expiredFiles = await File.find({ expireTime: { $lte: now } }).lean();
   const expiredWorkspaces = await Workspace.find({ expiresAt: { $lte: now } }).lean();
 
+  // Find all files belonging to expired workspaces to prevent orphans on Cloudinary/Disk
+  const expiredWorkspaceIds = expiredWorkspaces.map((w) => w.workspaceId);
+  const filesOfExpiredWorkspaces = expiredWorkspaceIds.length > 0
+    ? await File.find({ workspaceId: { $in: expiredWorkspaceIds } }).lean()
+    : [];
+
+  const allFilesToDelete = [...expiredFiles];
+  const fileIdsSet = new Set(expiredFiles.map((f) => String(f._id)));
+  for (const f of filesOfExpiredWorkspaces) {
+    if (!fileIdsSet.has(String(f._id))) {
+      allFilesToDelete.push(f);
+      fileIdsSet.add(String(f._id));
+    }
+  }
+
   const { deleteFromCloudinary } = require('./cloudinaryService');
 
-  for (const file of expiredFiles) {
+  for (const file of allFilesToDelete) {
     if (file.storagePath) {
       await fs.rm(file.storagePath, { force: true });
     }
     if (file.cloudinaryPublicId) {
-      let resourceType = 'raw';
-      if (file.fileType) {
-        if (file.fileType.startsWith('image/')) {
-          resourceType = 'image';
-        } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
-          resourceType = 'video';
+      let resourceType = file.cloudinaryResourceType;
+      if (!resourceType) {
+        resourceType = 'raw';
+        if (file.fileType) {
+          if (file.fileType.startsWith('image/') || file.fileType === 'application/pdf') {
+            resourceType = 'image';
+          } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
+            resourceType = 'video';
+          }
         }
       }
       try {
@@ -46,8 +64,12 @@ async function removeExpiredFilesAndWorkspaces() {
     await fs.rm(`${env.tempDir}/${workspace.workspaceId}`, { recursive: true, force: true });
   }
 
-  await File.deleteMany({ _id: { $in: expiredFiles.map((file) => file._id) } });
-  await Workspace.deleteMany({ _id: { $in: expiredWorkspaces.map((workspace) => workspace._id) } });
+  if (allFilesToDelete.length > 0) {
+    await File.deleteMany({ _id: { $in: allFilesToDelete.map((file) => file._id) } });
+  }
+  if (expiredWorkspaces.length > 0) {
+    await Workspace.deleteMany({ _id: { $in: expiredWorkspaces.map((workspace) => workspace._id) } });
+  }
 
   return {
     expiredFiles: expiredFiles.length,

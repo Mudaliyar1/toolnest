@@ -56,12 +56,15 @@ async function deleteFile(req, res, next) {
     }
     if (file.cloudinaryPublicId) {
       const { deleteFromCloudinary } = require('../services/cloudinaryService');
-      let resourceType = 'raw';
-      if (file.fileType) {
-        if (file.fileType.startsWith('image/')) {
-          resourceType = 'image';
-        } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
-          resourceType = 'video';
+      let resourceType = file.cloudinaryResourceType;
+      if (!resourceType) {
+        resourceType = 'raw';
+        if (file.fileType) {
+          if (file.fileType.startsWith('image/') || file.fileType === 'application/pdf') {
+            resourceType = 'image';
+          } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
+            resourceType = 'video';
+          }
         }
       }
       try {

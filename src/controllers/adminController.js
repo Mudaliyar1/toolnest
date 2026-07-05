@@ -36,7 +36,7 @@ async function handleLogin(req, res) {
 
   await Admin.updateOne({ email: admin.email }, { $set: { lastLoginAt: new Date() } });
   setAdminCookie(res, admin);
-  return res.redirect('/secure-admin-access/dashboard');
+  return res.redirect(`${env.adminAccessPath}/dashboard`);
 }
 
 async function renderDashboard(req, res) {

@@ -36,8 +36,18 @@ async function handleToolExecution(req, res, next) {
     const sanitizedFiles = [];
 
     for (const file of req.files || []) {
-      const category = tool.category;
-      const validation = await validateUploadedFile(file.path, file.originalname, category === 'pdf' ? 'pdf' : category === 'image' ? 'image' : category === 'video' ? 'video' : 'audio');
+      let expectedCategory = tool.category;
+      if (tool.slug === 'image-to-pdf') {
+        expectedCategory = 'image';
+      } else if (tool.slug === 'gif-to-video') {
+        expectedCategory = 'video';
+      }
+
+      const validation = await validateUploadedFile(
+        file.path,
+        file.originalname,
+        expectedCategory === 'pdf' ? 'pdf' : expectedCategory === 'image' ? 'image' : expectedCategory === 'video' ? 'video' : 'audio'
+      );
       if (!validation.ok) {
         await fs.rm(file.path, { force: true });
         throw new Error(validation.reason);
@@ -73,6 +83,7 @@ async function handleToolExecution(req, res, next) {
         storagePath: storedPath,
         cloudinaryPublicId: uploadResult ? uploadResult.publicId : undefined,
         cloudinaryUrl: uploadResult ? uploadResult.url : undefined,
+        cloudinaryResourceType: uploadResult ? uploadResult.resourceType : undefined,
         toolName: tool.slug,
         direction: 'input'
       });
@@ -118,6 +129,7 @@ async function handleToolExecution(req, res, next) {
           storagePath: file.path,
           cloudinaryPublicId: uploadResult ? uploadResult.publicId : undefined,
           cloudinaryUrl: uploadResult ? uploadResult.url : undefined,
+          cloudinaryResourceType: uploadResult ? uploadResult.resourceType : undefined,
           toolName: tool.slug,
           direction: 'output'
         });
