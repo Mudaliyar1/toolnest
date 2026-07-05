@@ -21,11 +21,17 @@ async function renderWorkspace(req, res) {
 
 async function downloadFile(req, res, next) {
   try {
-    const file = await File.findOne({ _id: req.params.fileId, workspaceId: req.workspace.workspaceId }).lean();
+    let file = await File.findOne({ _id: req.params.fileId, workspaceId: req.workspace.workspaceId }).lean();
+    if (!file) {
+      file = await File.findOne({ _id: req.params.fileId }).lean();
+    }
     if (!file) {
       return next(Object.assign(new Error('File not found.'), { statusCode: 404 }));
     }
 
+    if (file.cloudinaryUrl) {
+      return res.redirect(file.cloudinaryUrl);
+    }
     return res.download(file.storagePath, file.processedName || path.basename(file.storagePath));
   } catch (error) {
     return next(error);
@@ -39,7 +45,25 @@ async function deleteFile(req, res, next) {
       return next(Object.assign(new Error('File not found.'), { statusCode: 404 }));
     }
 
-    await fs.rm(file.storagePath, { force: true });
+    if (file.storagePath) {
+      await fs.rm(file.storagePath, { force: true });
+    }
+    if (file.cloudinaryPublicId) {
+      const { deleteFromCloudinary } = require('../services/cloudinaryService');
+      let resourceType = 'raw';
+      if (file.fileType) {
+        if (file.fileType.startsWith('image/')) {
+          resourceType = 'image';
+        } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
+          resourceType = 'video';
+        }
+      }
+      try {
+        await deleteFromCloudinary(file.cloudinaryPublicId, resourceType);
+      } catch (err) {
+        console.error(`Failed to delete Cloudinary asset ${file.cloudinaryPublicId}:`, err.message);
+      }
+    }
     await file.deleteOne();
     return res.redirect('/workspace');
   } catch (error) {

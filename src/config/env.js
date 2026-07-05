@@ -12,6 +12,7 @@ module.exports = {
   cookieEncryptionKey: process.env.COOKIE_ENCRYPTION_KEY || 'toolnest-cookie-encryption-key-32',
   workspaceTtlMinutes: Number.parseInt(process.env.WORKSPACE_TTL_MINUTES || '10', 10),
   adminAccessPath: process.env.ADMIN_ACCESS_PATH || '/secure-admin-access',
+  adminEmail: process.env.ADMIN_EMAIL || 'admin@toolnest.local',
   adminPassword: process.env.ADMIN_PASSWORD || 'change-me',
   siteName: process.env.SITE_NAME || 'ToolNest',
   siteUrl: process.env.SITE_URL || 'http://localhost:3000',

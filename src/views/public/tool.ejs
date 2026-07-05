@@ -12,103 +12,718 @@
             </div>
           </div>
 
-          <form class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute" enctype="multipart/form-data">
+<%
+  const slug = tool.slug;
+  const showField = (field) => {
+    // PDF Tools
+    if (['merge-pdf', 'split-pdf', 'compress-pdf', 'pdf-page-numbering', 'image-to-pdf'].includes(slug)) {
+      return field === 'files';
+    }
+    if (slug === 'rotate-pdf') {
+      return ['files', 'rotation'].includes(field);
+    }
+    if (['extract-pages', 'delete-pages'].includes(slug)) {
+      return ['files', 'pages'].includes(field);
+    }
+    if (slug === 'add-watermark') {
+      return ['files', 'watermark'].includes(field);
+    }
+
+    // Image Tools
+    if (['compress-image', 'blur-image', 'background-removal'].includes(slug)) {
+      return ['files', 'value'].includes(field);
+    }
+    if (['resize-image', 'crop-image', 'image-upscaler'].includes(slug)) {
+      return ['files', 'width', 'height'].includes(field);
+    }
+    if (['convert-jpg', 'convert-png', 'convert-webp', 'thumbnail-generator', 'color-extractor'].includes(slug)) {
+      return field === 'files';
+    }
+    if (slug === 'watermark-image') {
+      return ['files', 'text'].includes(field);
+    }
+
+    // Video Tools
+    if (['video-compressor', 'video-merger', 'gif-to-video', 'video-metadata-viewer', 'video-mute-tool'].includes(slug)) {
+      return field === 'files';
+    }
+    if (slug === 'video-trimmer') {
+      return ['files', 'start', 'end'].includes(field);
+    }
+    if (slug === 'video-resolution-changer') {
+      return ['files', 'width', 'height'].includes(field);
+    }
+    if (slug === 'video-to-gif') {
+      return ['files', 'width', 'value'].includes(field);
+    }
+    if (slug === 'thumbnail-extractor') {
+      return ['files', 'value'].includes(field);
+    }
+    if (slug === 'video-speed-controller') {
+      return ['files', 'value'].includes(field);
+    }
+
+    // Audio Tools
+    if (['audio-converter', 'audio-merger', 'audio-metadata-viewer', 'audio-compressor'].includes(slug)) {
+      return field === 'files';
+    }
+    if (slug === 'mp3-cutter') {
+      return ['files', 'start', 'end'].includes(field);
+    }
+    if (['volume-booster', 'audio-speed-changer'].includes(slug)) {
+      return ['files', 'value'].includes(field);
+    }
+
+    // Developer Tools
+    if (['json-formatter', 'json-validator', 'base64-encoder', 'base64-decoder', 'url-encoder', 'url-decoder', 'jwt-decoder', 'sql-formatter', 'html-formatter', 'css-minifier', 'javascript-minifier', 'password-strength-checker', 'word-counter'].includes(slug)) {
+      return field === 'text';
+    }
+    if (slug === 'regex-tester') {
+      return ['text', 'pattern', 'flags'].includes(field);
+    }
+    if (slug === 'hash-generator') {
+      return ['text', 'algorithm'].includes(field);
+    }
+    if (slug === 'uuid-generator') {
+      return false;
+    }
+
+    // Student Tools
+    if (['cgpa-calculator'].includes(slug)) {
+      return field === 'text';
+    }
+    if (['sgpa-calculator'].includes(slug)) {
+      return ['text', 'mode'].includes(field);
+    }
+    if (['attendance-calculator', 'percentage-calculator', 'gpa-predictor'].includes(slug)) {
+      return ['value', 'length'].includes(field);
+    }
+    if (slug === 'study-timer') {
+      return field === 'length';
+    }
+
+    // Business Tools
+    if (['gst-calculator', 'profit-calculator', 'margin-calculator', 'discount-calculator'].includes(slug)) {
+      return ['value', 'length'].includes(field);
+    }
+    if (['emi-calculator', 'loan-calculator'].includes(slug)) {
+      return ['value', 'length', 'pages'].includes(field);
+    }
+    if (slug === 'invoice-generator') {
+      return field === 'text';
+    }
+
+    // Utility Tools
+    if (['qr-generator'].includes(slug)) {
+      return field === 'value';
+    }
+    if (slug === 'barcode-generator') {
+      return ['value', 'algorithm'].includes(field);
+    }
+    if (['password-generator', 'random-generator'].includes(slug)) {
+      return field === 'length';
+    }
+    if (slug === 'age-calculator') {
+      return field === 'text';
+    }
+    if (slug === 'text-case-converter') {
+      return ['text', 'mode'].includes(field);
+    }
+    if (slug === 'unit-converter') {
+      return ['value', 'from', 'to', 'mode'].includes(field);
+    }
+    if (slug === 'currency-converter') {
+      return ['value', 'from', 'to'].includes(field);
+    }
+
+    return true;
+  };
+
+  const getFieldLabel = (field) => {
+    // PDF Tools
+    if (slug === 'rotate-pdf') {
+      if (field === 'files') return 'Select PDF File to Rotate';
+      if (field === 'rotation') return 'Rotation Angle (Degrees)';
+    }
+    if (slug === 'extract-pages') {
+      if (field === 'files') return 'Select PDF File';
+      if (field === 'pages') return 'Pages to Extract (e.g. 1, 3-5)';
+    }
+    if (slug === 'delete-pages') {
+      if (field === 'files') return 'Select PDF File';
+      if (field === 'pages') return 'Pages to Delete (e.g. 2, 4)';
+    }
+    if (slug === 'add-watermark') {
+      if (field === 'files') return 'Select PDF File';
+      if (field === 'watermark') return 'Watermark Text';
+    }
+
+    // Image Tools
+    if (slug === 'compress-image') {
+      if (field === 'files') return 'Select Image to Compress';
+      if (field === 'value') return 'Target Quality (1-100) or Compression Level';
+    }
+    if (slug === 'blur-image') {
+      if (field === 'files') return 'Select Image';
+      if (field === 'value') return 'Blur Amount (Sigma)';
+    }
+    if (slug === 'background-removal') {
+      if (field === 'files') return 'Select Image';
+      if (field === 'value') return 'Threshold (e.g. 20)';
+    }
+    if (slug === 'resize-image') {
+      if (field === 'files') return 'Select Image';
+      if (field === 'width') return 'New Width (px)';
+      if (field === 'height') return 'New Height (px)';
+    }
+    if (slug === 'crop-image') {
+      if (field === 'files') return 'Select Image';
+      if (field === 'width') return 'Crop Width (px)';
+      if (field === 'height') return 'Crop Height (px)';
+    }
+    if (slug === 'watermark-image') {
+      if (field === 'files') return 'Select Image';
+      if (field === 'text') return 'Watermark Text';
+    }
+
+    // Video Tools
+    if (slug === 'video-trimmer') {
+      if (field === 'files') return 'Select Video File';
+      if (field === 'start') return 'Start Offset (HH:MM:SS)';
+      if (field === 'end') return 'End Offset (HH:MM:SS)';
+    }
+    if (slug === 'video-resolution-changer') {
+      if (field === 'files') return 'Select Video';
+      if (field === 'width') return 'Target Width';
+      if (field === 'height') return 'Target Height';
+    }
+    if (slug === 'video-to-gif') {
+      if (field === 'files') return 'Select Video';
+      if (field === 'width') return 'GIF Width';
+      if (field === 'value') return 'FPS (Frames Per Second)';
+    }
+    if (slug === 'thumbnail-extractor') {
+      if (field === 'files') return 'Select Video';
+      if (field === 'value') return 'Extractor Time Offset (seconds)';
+    }
+    if (slug === 'video-speed-controller') {
+      if (field === 'files') return 'Select Video';
+      if (field === 'value') return 'Speed Multiplier (e.g. 1.5, 2.0)';
+    }
+
+    // Audio Tools
+    if (slug === 'mp3-cutter') {
+      if (field === 'files') return 'Select Audio File';
+      if (field === 'start') return 'Start Time (HH:MM:SS or seconds)';
+      if (field === 'end') return 'End Time (HH:MM:SS or seconds)';
+    }
+    if (slug === 'volume-booster') {
+      if (field === 'files') return 'Select Audio';
+      if (field === 'value') return 'Volume Boost Level (e.g. 1.5 for 150%)';
+    }
+    if (slug === 'audio-speed-changer') {
+      if (field === 'files') return 'Select Audio';
+      if (field === 'value') return 'Speed Ratio (e.g. 1.2)';
+    }
+
+    // Dev Tools
+    if (slug === 'regex-tester') {
+      if (field === 'text') return 'Source Text / Content';
+      if (field === 'pattern') return 'Regular Expression Pattern';
+      if (field === 'flags') return 'Flags (e.g. g, i, m)';
+    }
+    if (slug === 'hash-generator') {
+      if (field === 'text') return 'Input Text';
+      if (field === 'algorithm') return 'Hash Algorithm (e.g. md5, sha256)';
+    }
+
+    // Student & Financial Calculators
+    if (['attendance-calculator', 'percentage-calculator', 'gpa-predictor', 'gst-calculator', 'profit-calculator', 'margin-calculator', 'discount-calculator'].includes(slug)) {
+      if (field === 'value') return 'Obtained Amount / Principal / Value';
+      if (field === 'length') return 'Total Classes / Percentage Rate / GST / Cost';
+    }
+    if (['emi-calculator', 'loan-calculator'].includes(slug)) {
+      if (field === 'value') return 'Principal / Loan Amount';
+      if (field === 'length') return 'Annual Interest Rate (%)';
+      if (field === 'pages') return 'Tenure / Duration (Months)';
+    }
+
+    // Utility Generators
+    if (slug === 'qr-generator') {
+      if (field === 'value') return 'Text / URL to Embed';
+    }
+    if (slug === 'barcode-generator') {
+      if (field === 'value') return 'Barcode Data';
+      if (field === 'algorithm') return 'Barcode Symbology (e.g. code128)';
+    }
+    if (['password-generator', 'random-generator'].includes(slug)) {
+      if (field === 'length') return 'Password / Code Length';
+    }
+
+    // Fallbacks
+    if (field === 'text') return 'Text / Input';
+    if (field === 'files') return 'Upload files';
+    if (field === 'mode') return 'Mode / Unit Type';
+    if (field === 'value') return 'Value / Amount / Quality';
+    if (field === 'pages') return 'Pages / Term';
+    if (field === 'length') return 'Quantity / Length / Total';
+    if (field === 'width') return 'Width';
+    if (field === 'height') return 'Height';
+    if (field === 'rotation') return 'Rotation';
+    if (field === 'start') return 'Start Time / Offset';
+    if (field === 'end') return 'End Time / Offset';
+    if (field === 'speed') return 'Speed / Volume';
+    if (field === 'algorithm') return 'Algorithm / Symbology';
+    if (field === 'pattern') return 'Pattern';
+    if (field === 'flags') return 'Flags';
+    if (field === 'from') return 'From Unit / Currency';
+    if (field === 'to') return 'To Unit / Currency';
+    if (field === 'watermark') return 'Watermark / Time';
+
+    return field;
+  };
+%>
+
+          <form class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <div class="col-12">
-              <label class="form-label fw-semibold">Text / Input</label>
-              <textarea name="text" rows="5" class="form-control"></textarea>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Upload files</label>
-              <input type="file" name="files" multiple class="form-control">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Mode</label>
-              <input type="text" name="mode" class="form-control" placeholder="upper, lower, title">
-            </div>
-            <div class="col-md-6 col-lg-4">
-              <label class="form-label fw-semibold">Value</label>
-              <input type="text" name="value" class="form-control">
-            </div>
-            <div class="col-md-6 col-lg-4">
-              <label class="form-label fw-semibold">Pages</label>
-              <input type="text" name="pages" class="form-control" placeholder="1,3-5">
-            </div>
-            <div class="col-md-6 col-lg-4">
-              <label class="form-label fw-semibold">Quantity / Length</label>
-              <input type="number" name="length" min="1" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Width</label>
-              <input type="number" name="width" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Height</label>
-              <input type="number" name="height" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Rotation</label>
-              <input type="number" name="rotation" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Start</label>
-              <input type="text" name="start" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">End</label>
-              <input type="text" name="end" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Speed / Volume</label>
-              <input type="text" name="speed" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Algorithm</label>
-              <input type="text" name="algorithm" class="form-control" placeholder="sha256, sha512, md5">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Pattern</label>
-              <input type="text" name="pattern" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Flags</label>
-              <input type="text" name="flags" class="form-control" placeholder="gim">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">From</label>
-              <input type="text" name="from" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">To</label>
-              <input type="text" name="to" class="form-control">
-            </div>
-            <div class="col-md-4 col-lg-3">
-              <label class="form-label fw-semibold">Watermark / Time</label>
-              <input type="text" name="watermark" class="form-control">
-            </div>
-            <div class="col-12 pt-2">
-              <button type="submit" class="btn btn-primary btn-lg">Run Tool</button>
+
+            <!-- File Upload Input (Common to PDF/Image/Video/Audio files) -->
+            <% if (['pdf', 'image', 'video', 'audio'].includes(tool.category)) { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Upload File(s)</label>
+                <input type="file" name="files" <%= ['merge-pdf', 'image-to-pdf', 'video-merger', 'audio-merger'].includes(slug) ? 'multiple' : '' %> class="form-control" required>
+              </div>
+            <% } %>
+
+            <!-- Text Area Input for Code/Dev/Text utilities -->
+            <% if (['json-formatter', 'json-validator', 'base64-encoder', 'base64-decoder', 'url-encoder', 'url-decoder', 'jwt-decoder', 'sql-formatter', 'html-formatter', 'css-minifier', 'javascript-minifier', 'password-strength-checker', 'word-counter', 'cgpa-calculator', 'invoice-generator', 'regex-tester', 'hash-generator'].includes(slug)) { %>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Input Text / Data</label>
+                <textarea name="text" rows="6" class="form-control" placeholder="Paste or type your input content here..." required></textarea>
+              </div>
+            <% } %>
+
+            <!-- Tool Specific Configuration Options -->
+
+            <!-- 1. PDF Options -->
+            <% if (slug === 'split-pdf') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Split Mode</label>
+                <select name="mode" class="form-select">
+                  <option value="range" selected>Split by Custom Page Ranges</option>
+                  <option value="all">Extract All Pages Individually</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Page Range Selection</label>
+                <input type="text" name="pages" class="form-control" placeholder="e.g. 1-3, 5, 8-12">
+              </div>
+            <% } %>
+
+            <% if (slug === 'unlock-pdf') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Password to Decrypt / Unlock</label>
+                <input type="password" name="value" class="form-control" placeholder="Enter PDF decryption password" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'compress-pdf') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Compression Ratio</label>
+                <select name="value" class="form-select">
+                  <option value="40">Low Compression (Highest Visual Quality)</option>
+                  <option value="70" selected>Medium Compression (Recommended Balance)</option>
+                  <option value="90">High Compression (Smallest File Size)</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (slug === 'protect-pdf') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Password Lock</label>
+                <input type="password" name="value" class="form-control" placeholder="Set PDF password" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'rotate-pdf') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Rotation Angle (Degrees)</label>
+                <select name="rotation" class="form-select">
+                  <option value="90" selected>90° Clockwise</option>
+                  <option value="180">180° Half-Turn</option>
+                  <option value="270">270° Counter-Clockwise</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (['extract-pages', 'delete-pages'].includes(slug)) { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Target Pages</label>
+                <input type="text" name="pages" class="form-control" placeholder="e.g. 1, 3-5, 9" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'add-watermark') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Watermark Text Overlay</label>
+                <input type="text" name="watermark" class="form-control" placeholder="e.g. DRAFT / CONFIDENTIAL" required>
+              </div>
+            <% } %>
+
+            <!-- 2. Image Options -->
+            <% if (slug === 'compress-image') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Image Compression Quality</label>
+                <div class="d-flex align-items-center gap-3">
+                  <input type="range" name="value" min="10" max="95" value="80" class="form-range" oninput="this.nextElementSibling.value = this.value + '%'">
+                  <output class="fw-semibold text-primary" style="min-width: 45px;">80%</output>
+                </div>
+              </div>
+            <% } %>
+
+            <% if (slug === 'blur-image') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Blur Radius (Sigma)</label>
+                <div class="d-flex align-items-center gap-3">
+                  <input type="range" name="value" min="1" max="50" value="8" class="form-range" oninput="this.nextElementSibling.value = this.value">
+                  <output class="fw-semibold text-primary" style="min-width: 30px;">8</output>
+                </div>
+              </div>
+            <% } %>
+
+            <% if (slug === 'background-removal') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Color Tolerance Threshold (0-255)</label>
+                <input type="number" name="value" min="0" max="255" value="240" class="form-control" required>
+              </div>
+            <% } %>
+
+            <% if (['resize-image', 'crop-image', 'image-upscaler'].includes(slug)) { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Target Width (px)</label>
+                <input type="number" name="width" class="form-control" placeholder="Width in pixels" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Target Height (px)</label>
+                <input type="number" name="height" class="form-control" placeholder="Height in pixels" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'watermark-image') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Watermark Signature Text</label>
+                <input type="text" name="text" class="form-control" placeholder="e.g. Copyright ToolNest" required>
+              </div>
+            <% } %>
+
+            <!-- 3. Video / Audio Options -->
+            <% if (['video-trimmer', 'mp3-cutter'].includes(slug)) { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Start Timestamp (HH:MM:SS)</label>
+                <input type="text" name="start" class="form-control" placeholder="e.g. 00:00:10" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">End Timestamp (HH:MM:SS)</label>
+                <input type="text" name="end" class="form-control" placeholder="e.g. 00:00:20" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'video-resolution-changer') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Target Width (px)</label>
+                <input type="number" name="width" class="form-control" placeholder="e.g. 1280" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Target Height (px)</label>
+                <input type="number" name="height" class="form-control" placeholder="e.g. 720" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'video-to-gif') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">GIF Width (px)</label>
+                <input type="number" name="width" class="form-control" placeholder="e.g. 480" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">FPS (Frames Per Second)</label>
+                <input type="number" name="value" class="form-control" placeholder="e.g. 10" required>
+              </div>
+            <% } %>
+
+            <% if (['video-speed-controller', 'volume-booster', 'audio-speed-changer', 'thumbnail-extractor'].includes(slug)) { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">
+                  <%= slug === 'video-speed-controller' ? 'Speed Multiplier (e.g. 1.5)' : slug === 'volume-booster' ? 'Amplification Level (e.g. 1.5)' : slug === 'audio-speed-changer' ? 'Speed Multiplier (e.g. 1.25)' : 'Capture Frame Time Offset (seconds)' %>
+                </label>
+                <input type="text" name="value" class="form-control" placeholder="e.g. 1.5" required>
+              </div>
+            <% } %>
+
+            <!-- 4. Developer Options -->
+            <% if (slug === 'regex-tester') { %>
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Regular Expression Pattern</label>
+                <input type="text" name="pattern" class="form-control" placeholder="e.g. [a-zA-Z]+" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Regex Flags</label>
+                <input type="text" name="flags" class="form-control" placeholder="e.g. g, i, m" value="g" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'hash-generator') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Hashing Algorithm</label>
+                <select name="algorithm" class="form-select">
+                  <option value="sha256" selected>SHA-256 (Secure)</option>
+                  <option value="sha512">SHA-512</option>
+                  <option value="md5">MD5 (Legacy)</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (['password-generator', 'random-generator'].includes(slug)) { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Length</label>
+                <div class="d-flex align-items-center gap-3">
+                  <input type="range" name="length" min="6" max="128" value="16" class="form-range" oninput="this.nextElementSibling.value = this.value">
+                  <output class="fw-semibold text-primary" style="min-width: 30px;">16</output>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- 5. Student Options -->
+            <% if (slug === 'sgpa-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Credits of Subjects (comma separated)</label>
+                <input type="text" name="credits" class="form-control" placeholder="e.g. 4, 3, 3, 4" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Obtained Grade Points (comma separated)</label>
+                <input type="text" name="grades" class="form-control" placeholder="e.g. 9, 8, 10, 7" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'attendance-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Classes Attended</label>
+                <input type="number" name="attended" min="0" class="form-control" placeholder="e.g. 36" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Total Classes Conducted</label>
+                <input type="number" name="total" min="1" class="form-control" placeholder="e.g. 40" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'percentage-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Obtained Score / Value</label>
+                <input type="number" step="0.01" name="value" class="form-control" placeholder="e.g. 450" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Total Max Score / Value</label>
+                <input type="number" step="0.01" name="length" class="form-control" placeholder="e.g. 500" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'gpa-predictor') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Current Cumulative GPA</label>
+                <input type="number" step="0.01" name="current" class="form-control" placeholder="e.g. 7.5" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Target Cumulative GPA</label>
+                <input type="number" step="0.01" name="target" class="form-control" placeholder="e.g. 8.5" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'study-timer') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Duration Length (Minutes)</label>
+                <select name="length" class="form-select">
+                  <option value="25" selected>25 minutes (Pomodoro Session)</option>
+                  <option value="50">50 minutes (Deep Focus Block)</option>
+                  <option value="15">15 minutes (Short Block)</option>
+                </select>
+              </div>
+            <% } %>
+
+            <!-- 6. Business Options -->
+            <% if (slug === 'gst-calculator') { %>
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Net Pre-Tax Amount</label>
+                <input type="number" step="0.01" name="amount" class="form-control" placeholder="e.g. 1000" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">GST Rate (%)</label>
+                <select name="rate" class="form-select">
+                  <option value="5">5%</option>
+                  <option value="12">12%</option>
+                  <option value="18" selected>18% (Standard)</option>
+                  <option value="28">28%</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (['emi-calculator', 'loan-calculator'].includes(slug)) { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Principal Loan Amount</label>
+                <div class="d-flex align-items-center gap-3">
+                  <input type="range" name="principal" min="10000" max="10000000" step="10000" value="500000" class="form-range" oninput="this.nextElementSibling.value = '$' + Number(this.value).toLocaleString()">
+                  <output class="fw-semibold text-primary" style="min-width: 120px;">$500,000</output>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Annual Interest Rate (%)</label>
+                <input type="number" step="0.01" name="rate" value="8.5" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Tenure (Months)</label>
+                <input type="number" name="months" value="60" class="form-control" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'profit-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Total Revenue</label>
+                <input type="number" step="0.01" name="revenue" class="form-control" placeholder="e.g. 5000" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Cost of Goods (COGS)</label>
+                <input type="number" step="0.01" name="cost" class="form-control" placeholder="e.g. 3000" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'margin-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Total Revenue</label>
+                <input type="number" step="0.01" name="revenue" class="form-control" placeholder="e.g. 5000" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Total Gross Profit</label>
+                <input type="number" step="0.01" name="profit" class="form-control" placeholder="e.g. 2000" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'discount-calculator') { %>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Original Price</label>
+                <input type="number" step="0.01" name="price" class="form-control" placeholder="e.g. 250" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Discount Percentage (%)</label>
+                <input type="number" name="discount" class="form-control" placeholder="e.g. 20" required>
+              </div>
+            <% } %>
+
+            <!-- 7. Utility Options -->
+            <% if (slug === 'qr-generator') { %>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Text or URL Destination</label>
+                <input type="text" name="value" class="form-control" placeholder="e.g. https://toolnest.com" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'barcode-generator') { %>
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Barcode Data Value</label>
+                <input type="text" name="value" class="form-control" placeholder="e.g. 74251124" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Symbology</label>
+                <select name="algorithm" class="form-select">
+                  <option value="code128" selected>Code 128 (Standard)</option>
+                  <option value="ean13">EAN-13</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (slug === 'age-calculator') { %>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Date of Birth</label>
+                <input type="date" name="birthDate" class="form-control" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'unit-converter') { %>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Unit Category</label>
+                <select name="kind" class="form-select">
+                  <option value="length" selected>Length</option>
+                  <option value="mass">Mass</option>
+                  <option value="temperature">Temperature</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Input Value</label>
+                <input type="number" step="any" name="value" value="1" class="form-control" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Convert From Unit</label>
+                <input type="text" name="from" class="form-control" placeholder="e.g. m, kg, c" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Convert To Unit</label>
+                <input type="text" name="to" class="form-control" placeholder="e.g. km, lb, f" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'currency-converter') { %>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Money Value / Amount</label>
+                <input type="number" step="0.01" name="amount" value="100" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Convert From</label>
+                <input type="text" name="from" class="form-control" placeholder="e.g. USD" value="USD" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Convert To</label>
+                <input type="text" name="to" class="form-control" placeholder="e.g. EUR" value="EUR" required>
+              </div>
+            <% } %>
+
+            <% if (slug === 'text-case-converter') { %>
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Target Case</label>
+                <select name="mode" class="form-select">
+                  <option value="upper" selected>UPPERCASE</option>
+                  <option value="lower">lowercase</option>
+                  <option value="title">Title Case</option>
+                </select>
+              </div>
+            <% } %>
+
+            <div class="col-12 pt-3">
+              <button type="submit" class="btn btn-primary btn-lg px-5">Run Tool</button>
             </div>
           </form>
 
           <% if (result) { %>
-            <div class="card bg-light border-0 mt-4">
-              <div class="card-body">
-                <h2 class="h5 fw-semibold mb-3"><%= result.title %></h2>
-                <% if (result.kind === 'text') { %>
-                  <pre class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
-                <% } else if (result.kind === 'file') { %>
-                  <div class="d-grid gap-2">
-                    <% resultRecords.forEach((file) => { %>
-                      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
-                        <div class="fw-medium"><%= file.processedName %></div>
-                        <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm">Download</a>
-                      </div>
-                    <% }) %>
-                  </div>
-                <% } %>
+            <% if (result.kind === 'error') { %>
+              <div class="alert alert-danger border-0 shadow-sm mt-4 mb-0 p-3" role="alert">
+                <div class="fw-semibold mb-1"><%= result.title %></div>
+                <div class="small"><%= result.content %></div>
               </div>
-            </div>
+            <% } else { %>
+              <div class="card bg-light border-0 mt-4">
+                <div class="card-body">
+                  <h2 class="h5 fw-semibold mb-3"><%= result.title %></h2>
+                  <% if (result.kind === 'text') { %>
+                    <pre class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
+                  <% } else if (result.kind === 'file') { %>
+                    <div class="d-grid gap-2">
+                      <% resultRecords.forEach((file) => { %>
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
+                          <div class="fw-medium"><%= file.processedName %></div>
+                          <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm">Download</a>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            <% } %>
           <% } %>
         </div>
       </div>

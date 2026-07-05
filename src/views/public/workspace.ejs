@@ -20,7 +20,9 @@
         <div class="col-md-4">
           <div class="p-3 bg-light border rounded-3 h-100">
             <div class="small text-secondary">Remaining Time</div>
-            <div class="fw-semibold"><%= workspace ? `${workspace.remainingMinutes} min` : 'Pending' %></div>
+            <div id="countdown-timer" class="fw-semibold text-primary" data-expires="<%= workspace ? workspace.expiresAt : '' %>">
+              <%= workspace ? `${workspace.remainingMinutes} min` : 'Pending' %>
+            </div>
           </div>
         </div>
         <div class="col-md-4">
@@ -78,3 +80,5 @@
     </div>
   </div>
 </section>
+
+<script src="/js/workspace.js" defer></script>

@@ -15,6 +15,10 @@
           <form method="post" class="vstack gap-3">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div>
+              <label class="form-label fw-semibold">Email Address</label>
+              <input type="email" name="email" required class="form-control" placeholder="admin@example.com">
+            </div>
+            <div>
               <label class="form-label fw-semibold">Password</label>
               <input type="password" name="password" autocomplete="current-password" required class="form-control">
             </div>

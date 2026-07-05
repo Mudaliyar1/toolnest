@@ -17,15 +17,16 @@ async function renderLogin(req, res) {
 }
 
 async function handleLogin(req, res) {
+  const email = String(req.body.email || '').trim();
   const password = String(req.body.password || '').trim();
-  if (!password) {
+  if (!email || !password) {
     return res.status(400).render('admin/login', {
       title: 'Secure Admin Access',
-      error: 'Password is required.'
+      error: 'Email and password are required.'
     });
   }
 
-  const admin = await authenticateAdmin(password);
+  const admin = await authenticateAdmin(email, password);
   if (!admin) {
     return res.status(401).render('admin/login', {
       title: 'Secure Admin Access',
@@ -40,15 +41,21 @@ async function handleLogin(req, res) {
 
 async function renderDashboard(req, res) {
   const analytics = await Analytics.findOne().lean();
-  const [totalVisitors, activeUsers, todayVisitors, monthlyVisitors, totalToolUsage, serverHealth] = await Promise.all([
+  const [totalVisitors, activeUsers, todayVisitors, monthlyVisitors, totalToolUsage, serverHealth, cloudinaryAssets, cloudinaryStorageRes] = await Promise.all([
     Visitor.countDocuments(),
     Workspace.countDocuments({ expiresAt: { $gt: new Date() } }),
     Visitor.countDocuments({ visitTime: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
     Visitor.countDocuments({ visitTime: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }),
     ToolUsage.aggregate([{ $group: { _id: null, total: { $sum: '$totalUsage' } } }]),
-    Promise.resolve({ status: 'healthy', uptime: process.uptime() })
+    Promise.resolve({ status: 'healthy', uptime: process.uptime() }),
+    File.countDocuments({ cloudinaryPublicId: { $ne: null } }),
+    File.aggregate([
+      { $match: { cloudinaryPublicId: { $ne: null } } },
+      { $group: { _id: null, total: { $sum: '$fileSize' } } }
+    ])
   ]);
 
+  const cloudinarySize = cloudinaryStorageRes[0] ? cloudinaryStorageRes[0].total : 0;
   const mostUsedTools = await ToolUsage.find().sort({ totalUsage: -1 }).limit(5).lean();
   const activeFiles = await File.countDocuments({ expireTime: { $gt: new Date() } });
   const expiredFiles = await File.countDocuments({ expireTime: { $lte: new Date() } });
@@ -65,7 +72,9 @@ async function renderDashboard(req, res) {
       totalToolUsage: totalToolUsage[0] ? totalToolUsage[0].total : 0,
       serverHealth,
       activeFiles,
-      expiredFiles
+      expiredFiles,
+      cloudinaryAssets,
+      cloudinarySize
     },
     mostUsedTools,
     csrfToken: req.csrfToken()

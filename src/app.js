@@ -6,7 +6,7 @@ const compression = require('compression');
 const csrf = require('csurf');
 const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
-const mongoSanitize = require('express-mongo-sanitize');
+const mongoSanitize = require('./middleware/mongoSanitize');
 const hpp = require('hpp');
 const ejsMate = require('ejs-mate');
 const env = require('./config/env');
@@ -49,7 +49,7 @@ app.use(compression());
 app.use(cookieParser(env.cookieSecret));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
-app.use(mongoSanitize());
+app.use(mongoSanitize);
 app.use(hpp());
 
 app.use(rateLimit({
@@ -79,6 +79,11 @@ app.use((req, res, next) => {
 app.use(trafficAnalytics);
 
 app.use(csrf({ cookie: true }));
+
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 
 app.use(env.adminAccessPath, adminRoutes);
 app.use(seoRoutes);

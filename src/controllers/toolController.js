@@ -25,11 +25,11 @@ function renderToolPage(req, res, next) {
 }
 
 async function handleToolExecution(req, res, next) {
+  const tool = findToolBySlug(req.params.slug);
+  if (!tool) {
+    return next(Object.assign(new Error('Tool not found.'), { statusCode: 404 }));
+  }
   try {
-    const tool = findToolBySlug(req.params.slug);
-    if (!tool) {
-      return next(Object.assign(new Error('Tool not found.'), { statusCode: 404 }));
-    }
 
     const workspaceId = req.workspace.workspaceId;
     const directories = await ensureWorkspaceDirectories(workspaceId);
@@ -54,6 +54,14 @@ async function handleToolExecution(req, res, next) {
       await fs.rename(file.path, storedPath);
       sanitizedFiles.push({ ...file, path: storedPath });
 
+      const { uploadToCloudinary } = require('../services/cloudinaryService');
+      let uploadResult = null;
+      try {
+        uploadResult = await uploadToCloudinary(storedPath, { folder: `workspace_${workspaceId}` });
+      } catch (err) {
+        console.warn('Cloudinary upload failed, falling back to local storage:', err.message);
+      }
+
       await File.create({
         workspaceId,
         originalName: file.originalname,
@@ -63,6 +71,8 @@ async function handleToolExecution(req, res, next) {
         uploadTime: new Date(),
         expireTime: new Date(Date.now() + 10 * 60 * 1000),
         storagePath: storedPath,
+        cloudinaryPublicId: uploadResult ? uploadResult.publicId : undefined,
+        cloudinaryUrl: uploadResult ? uploadResult.url : undefined,
         toolName: tool.slug,
         direction: 'input'
       });
@@ -88,7 +98,15 @@ async function handleToolExecution(req, res, next) {
     );
 
     if (result.kind === 'file') {
+      const { uploadToCloudinary } = require('../services/cloudinaryService');
       for (const file of result.files) {
+        let uploadResult = null;
+        try {
+          uploadResult = await uploadToCloudinary(file.path, { folder: `workspace_${workspaceId}` });
+        } catch (err) {
+          console.warn('Cloudinary upload failed, falling back to local storage:', err.message);
+        }
+
         const record = await File.create({
           workspaceId,
           originalName: req.body.originalName || tool.name,
@@ -98,6 +116,8 @@ async function handleToolExecution(req, res, next) {
           uploadTime: new Date(),
           expireTime: new Date(Date.now() + 10 * 60 * 1000),
           storagePath: file.path,
+          cloudinaryPublicId: uploadResult ? uploadResult.publicId : undefined,
+          cloudinaryUrl: uploadResult ? uploadResult.url : undefined,
           toolName: tool.slug,
           direction: 'output'
         });
@@ -114,7 +134,18 @@ async function handleToolExecution(req, res, next) {
       resultRecords: createdRecords
     });
   } catch (error) {
-    return next(error);
+    return res.render('public/tool', {
+      title: `${tool.name} | ToolNest`,
+      tool,
+      workspace: req.workspace,
+      csrfToken: req.csrfToken(),
+      result: {
+        kind: 'error',
+        title: 'Error Processing Tool',
+        content: error.message
+      },
+      resultRecords: []
+    });
   }
 }
 

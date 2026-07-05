@@ -8,8 +8,10 @@ const fileSchema = new mongoose.Schema(
     fileType: { type: String, required: true, index: true },
     fileSize: { type: Number, required: true },
     uploadTime: { type: Date, default: Date.now, index: true },
-    expireTime: { type: Date, required: true, index: true },
-    storagePath: { type: String, required: true },
+    expireTime: { type: Date, required: true },
+    storagePath: { type: String },
+    cloudinaryPublicId: { type: String, index: true },
+    cloudinaryUrl: { type: String },
     toolName: { type: String, required: true, index: true },
     direction: { type: String, enum: ['input', 'output'], default: 'output' }
   },

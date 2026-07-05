@@ -17,8 +17,27 @@ async function removeExpiredFilesAndWorkspaces() {
   const expiredFiles = await File.find({ expireTime: { $lte: now } }).lean();
   const expiredWorkspaces = await Workspace.find({ expiresAt: { $lte: now } }).lean();
 
+  const { deleteFromCloudinary } = require('./cloudinaryService');
+
   for (const file of expiredFiles) {
-    await fs.rm(file.storagePath, { force: true });
+    if (file.storagePath) {
+      await fs.rm(file.storagePath, { force: true });
+    }
+    if (file.cloudinaryPublicId) {
+      let resourceType = 'raw';
+      if (file.fileType) {
+        if (file.fileType.startsWith('image/')) {
+          resourceType = 'image';
+        } else if (file.fileType.startsWith('video/') || file.fileType.startsWith('audio/')) {
+          resourceType = 'video';
+        }
+      }
+      try {
+        await deleteFromCloudinary(file.cloudinaryPublicId, resourceType);
+      } catch (err) {
+        console.error(`Failed to delete Cloudinary asset ${file.cloudinaryPublicId}:`, err.message);
+      }
+    }
   }
 
   for (const workspace of expiredWorkspaces) {

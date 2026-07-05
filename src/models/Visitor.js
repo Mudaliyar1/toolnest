@@ -12,6 +12,6 @@ const visitorSchema = new mongoose.Schema(
   { versionKey: false }
 );
 
-visitorSchema.index({ visitTime: 1 });
+
 
 module.exports = mongoose.model('Visitor', visitorSchema);

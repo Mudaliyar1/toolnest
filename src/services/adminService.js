@@ -4,7 +4,7 @@ const env = require('../config/env');
 const { sign, verifySignedValue } = require('../utils/cookies');
 
 const ADMIN_COOKIE = 'tn_admin';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@toolnest.local';
+const ADMIN_EMAIL = env.adminEmail || 'admin@toolnest.local';
 const PASSWORD_ITERATIONS = 120000;
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -44,22 +44,15 @@ async function ensureDefaultAdmin() {
   });
 }
 
-async function authenticateAdmin(password) {
-  const admin = await ensureDefaultAdmin();
-  if (!admin) {
-    return null;
-  }
+async function authenticateAdmin(email, password) {
+  await ensureDefaultAdmin();
 
-  const freshAdmin = admin.email ? admin : await Admin.findOne({ email: ADMIN_EMAIL });
+  const freshAdmin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
   if (!freshAdmin) {
     return null;
   }
 
   if (verifyPassword(password, freshAdmin.passwordHash)) {
-    return freshAdmin;
-  }
-
-  if (password === env.adminPassword && freshAdmin.isNew) {
     return freshAdmin;
   }
 

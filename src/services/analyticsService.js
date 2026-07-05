@@ -24,10 +24,15 @@ function getIpHash(req) {
 }
 
 async function recordWorkspaceVisit(req) {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    return;
+  }
+
   const analytics = await Analytics.findOneAndUpdate(
     {},
     { $setOnInsert: { pageViews: 0, sessions: 0, bounceRate: 0, averageSessionDuration: 0 } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
 
   analytics.pageViews += 1;

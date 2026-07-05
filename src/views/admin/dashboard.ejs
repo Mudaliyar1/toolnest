@@ -25,7 +25,7 @@
       </div>
 
       <div class="row g-4 mt-1">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
           <div class="card h-100 border-0 bg-light">
             <div class="card-body">
               <h2 class="h5 fw-semibold">Server Health</h2>
@@ -34,7 +34,16 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-4">
+          <div class="card h-100 border-0 bg-light">
+            <div class="card-body">
+              <h2 class="h5 fw-semibold">Cloudinary Storage</h2>
+              <p class="mb-1 text-secondary">Total Assets: <%= metrics.cloudinaryAssets %></p>
+              <p class="mb-0 text-secondary">Total Storage: <%= (metrics.cloudinarySize / (1024 * 1024)).toFixed(2) %> MB</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
           <div class="card h-100 border-0 bg-light">
             <div class="card-body">
               <h2 class="h5 fw-semibold mb-3">Most Used Tools</h2>

@@ -66,8 +66,8 @@ async function createWorkspaceDocument() {
 }
 
 async function resolveWorkspaceFromCookies(req) {
-  const signedWorkspace = req.signedCookies[WORKSPACE_COOKIE];
-  const signedSession = req.signedCookies[SESSION_COOKIE];
+  const signedWorkspace = req.cookies[WORKSPACE_COOKIE];
+  const signedSession = req.cookies[SESSION_COOKIE];
   const secureCookie = req.cookies[SECURE_COOKIE];
 
   if (!signedWorkspace || !signedSession || !secureCookie) {
@@ -90,6 +90,18 @@ async function resolveWorkspaceFromCookies(req) {
     return null;
   }
 
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    return {
+      workspace: {
+        workspaceId,
+        expiresAt: new Date(Date.now() + env.workspaceTtlMinutes * 60 * 1000),
+        lastActivity: new Date()
+      },
+      token
+    };
+  }
+
   const workspace = await Workspace.findOne({ workspaceId, tokenHash: hashToken(token) }).lean();
   if (!workspace || workspace.expiresAt <= new Date()) {
     return null;
@@ -103,19 +115,40 @@ async function ensureWorkspaceContext(req, res, next) {
     const existing = await resolveWorkspaceFromCookies(req);
     let workspaceData = existing;
 
+    const mongoose = require('mongoose');
+    const dbConnected = mongoose.connection.readyState === 1;
+
     if (!workspaceData) {
-      const created = await createWorkspaceDocument();
-      await persistWorkspaceCookies(res, created.workspace.workspaceId, created.token);
-      req.workspaceCreated = true;
-      workspaceData = {
-        workspace: created.workspace.toObject(),
-        token: created.token
-      };
+      if (dbConnected) {
+        const created = await createWorkspaceDocument();
+        await persistWorkspaceCookies(res, created.workspace.workspaceId, created.token);
+        req.workspaceCreated = true;
+        workspaceData = {
+          workspace: created.workspace.toObject(),
+          token: created.token
+        };
+      } else {
+        const workspaceId = `ws_offline_${crypto.randomUUID()}`;
+        const token = createToken();
+        const expiresAt = new Date(Date.now() + env.workspaceTtlMinutes * 60 * 1000);
+        await persistWorkspaceCookies(res, workspaceId, token);
+        req.workspaceCreated = true;
+        workspaceData = {
+          workspace: {
+            workspaceId,
+            expiresAt,
+            lastActivity: new Date()
+          },
+          token
+        };
+      }
     } else {
-      await Workspace.updateOne(
-        { workspaceId: workspaceData.workspace.workspaceId },
-        { $set: { lastActivity: new Date() } }
-      );
+      if (dbConnected) {
+        await Workspace.updateOne(
+          { workspaceId: workspaceData.workspace.workspaceId },
+          { $set: { lastActivity: new Date() } }
+        );
+      }
       await persistWorkspaceCookies(res, workspaceData.workspace.workspaceId, workspaceData.token);
       req.workspaceCreated = false;
     }
@@ -133,9 +166,14 @@ async function ensureWorkspaceContext(req, res, next) {
     };
 
     req.workspaceToken = workspaceData.token;
-    req.workspaceFiles = await File.find({ workspaceId: req.workspace.workspaceId })
-      .sort({ uploadTime: -1 })
-      .lean();
+
+    if (dbConnected) {
+      req.workspaceFiles = await File.find({ workspaceId: req.workspace.workspaceId })
+        .sort({ uploadTime: -1 })
+        .lean();
+    } else {
+      req.workspaceFiles = [];
+    }
 
     return next();
   } catch (error) {
