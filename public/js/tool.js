@@ -1102,7 +1102,7 @@
         const outName = `compressed.${ext}`;
         setStatus('Compressing video in browser... please wait.');
         ffmpegInstance.FS('writeFile', inName, await fetchFile(file));
-        await ffmpegInstance.run('-i', inName, '-vcodec', 'libx264', '-crf', '28', '-preset', 'fast', '-acodec', 'aac', outName);
+        await ffmpegInstance.run('-i', inName, '-vcodec', 'libx264', '-crf', '32', '-preset', 'ultrafast', '-acodec', 'aac', outName);
         writeResult(outName, readFFmpegFile(outName), mimeFor(ext));
       }
 
@@ -1144,7 +1144,7 @@
         const h = formData.get('height') || '720';
         setStatus(`Resizing video to ${w}x${h} in browser...`);
         ffmpegInstance.FS('writeFile', `input.${ext}`, await fetchFile(file));
-        await ffmpegInstance.run('-i', `input.${ext}`, '-vf', `scale=${w}:${h}`, '-c:a', 'copy', `resized.${ext}`);
+        await ffmpegInstance.run('-i', `input.${ext}`, '-vf', `scale=${w}:${h}`, '-vcodec', 'libx264', '-preset', 'ultrafast', '-c:a', 'copy', `resized.${ext}`);
         writeResult(`resized.${ext}`, readFFmpegFile(`resized.${ext}`), mimeFor(ext));
       }
 
@@ -1156,7 +1156,7 @@
         const fps = formData.get('value') || '10';
         setStatus('Converting video to GIF in browser...');
         ffmpegInstance.FS('writeFile', `input.${ext}`, await fetchFile(file));
-        await ffmpegInstance.run('-i', `input.${ext}`, '-vf', `fps=${fps},scale=${w}:-1:flags=lanczos`, '-loop', '0', 'output.gif');
+        await ffmpegInstance.run('-i', `input.${ext}`, '-vf', `fps=${fps},scale=${w}:-1:flags=fast_bilinear`, '-loop', '0', 'output.gif');
         writeResult('output.gif', readFFmpegFile('output.gif'), 'image/gif');
       }
 
@@ -1165,7 +1165,7 @@
         const file = files[0];
         setStatus('Converting GIF to MP4 in browser...');
         ffmpegInstance.FS('writeFile', 'input.gif', await fetchFile(file));
-        await ffmpegInstance.run('-f', 'gif', '-i', 'input.gif', '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 'output.mp4');
+        await ffmpegInstance.run('-f', 'gif', '-i', 'input.gif', '-vcodec', 'libx264', '-preset', 'ultrafast', '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', 'output.mp4');
         writeResult('output.mp4', readFFmpegFile('output.mp4'), 'video/mp4');
       }
 
@@ -1215,7 +1215,7 @@
         const atempo = Math.min(2.0, Math.max(0.5, speed)).toFixed(4);
         setStatus(`Changing video speed to ${speed}x in browser...`);
         ffmpegInstance.FS('writeFile', `input.${ext}`, await fetchFile(file));
-        await ffmpegInstance.run('-i', `input.${ext}`, '-filter_complex', `[0:v]setpts=${vpts}*PTS[v];[0:a]atempo=${atempo}[a]`, '-map', '[v]', '-map', '[a]', `speed.${ext}`);
+        await ffmpegInstance.run('-i', `input.${ext}`, '-filter_complex', `[0:v]setpts=${vpts}*PTS[v];[0:a]atempo=${atempo}[a]`, '-map', '[v]', '-map', '[a]', '-vcodec', 'libx264', '-preset', 'ultrafast', `speed.${ext}`);
         writeResult(`speed.${ext}`, readFFmpegFile(`speed.${ext}`), mimeFor(ext));
       }
 

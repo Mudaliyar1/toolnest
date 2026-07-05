@@ -248,11 +248,14 @@ function getProcessingConfigForTool(settings, tool) {
   const isCloudinaryAllowed = storageMethod === 'cloudinary' && settings.cloudinaryEnabled;
   const shouldUploadToCloudinary = isCloudinaryAllowed && !settings.emergencyMode.cloudinaryUploadsDisabled;
 
+  const categoryDisabled = (tool.category === 'video' && settings.emergencyMode.videoDisabled) ||
+                           (tool.category === 'audio' && settings.emergencyMode.audioDisabled);
+
   return {
-    method,
+    method: categoryDisabled ? 'disabled' : method,
     uploadLimitMb: override.uploadLimitMb || 15,
     uploadsDisabled: !!settings.emergencyMode.uploadsDisabled,
-    processingDisabled: !!settings.emergencyMode.processingDisabled,
+    processingDisabled: !!settings.emergencyMode.processingDisabled || categoryDisabled,
     shouldUploadToCloudinary
   };
 }

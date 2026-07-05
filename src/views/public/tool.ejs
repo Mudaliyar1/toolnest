@@ -423,7 +423,14 @@
   };
 %>
 
-          <form id="tool-execution-form" class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
+          <% if (processingConfig.processingDisabled) { %>
+            <div class="text-center py-5 border rounded-4 bg-light my-4">
+              <div class="display-4 text-warning mb-3">⚠️</div>
+              <h3 class="h5 fw-bold text-dark">Tool Temporarily Disabled</h3>
+              <p class="text-secondary mb-0">This tool is temporarily disabled by the administrator. Thank you for your patience.</p>
+            </div>
+          <% } else { %>
+            <form id="tool-execution-form" class="row g-3 mt-1" method="post" action="/tools/<%= tool.slug %>/execute?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
             <!-- File Upload Input (Common to PDF/Image/Video/Audio files) -->
@@ -882,6 +889,7 @@
               </div>
             </div>
           </form>
+          <% } %>
 
           <!-- Browser Processing Results Container -->
           <div id="browser-result-container" class="card bg-light border-0 mt-4 d-none">

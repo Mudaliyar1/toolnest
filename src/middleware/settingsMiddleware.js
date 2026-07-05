@@ -33,7 +33,7 @@ module.exports = async function settingsMiddleware(req, res, next) {
             title: `${tool.name} | Disabled`,
             tool,
             workspace: req.workspace,
-            csrfToken: req.csrfToken(),
+            csrfToken: req.csrfToken ? req.csrfToken() : '',
             result: {
               kind: 'error',
               title: 'Access Denied',
@@ -47,7 +47,7 @@ module.exports = async function settingsMiddleware(req, res, next) {
             title: `${tool.name} | Disabled`,
             tool,
             workspace: req.workspace,
-            csrfToken: req.csrfToken(),
+            csrfToken: req.csrfToken ? req.csrfToken() : '',
             result: {
               kind: 'error',
               title: 'Access Denied',

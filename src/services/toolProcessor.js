@@ -969,13 +969,13 @@ async function processVideoTool(slug, files, body, outputDir) {
       break;
     }
     case 'video-resolution-changer':
-      args.push('-y', '-i', source.path, '-vf', `scale=${Number.parseInt(body.width, 10) || 1280}:${Number.parseInt(body.height, 10) || 720}`, '-c:a', 'copy', outputPath);
+      args.push('-y', '-i', source.path, '-vf', `scale=${Number.parseInt(body.width, 10) || 1280}:${Number.parseInt(body.height, 10) || 720}`, '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'copy', outputPath);
       break;
     case 'video-to-gif':
-      args.push('-y', '-i', source.path, '-vf', `fps=${Number.parseInt(body.fps, 10) || 12},scale=${Number.parseInt(body.width, 10) || 480}:-1:flags=lanczos`, outputPath);
+      args.push('-y', '-i', source.path, '-vf', `fps=${Number.parseInt(body.fps, 10) || 12},scale=${Number.parseInt(body.width, 10) || 480}:-1:flags=fast_bilinear`, outputPath);
       break;
     case 'gif-to-video':
-      args.push('-y', '-i', source.path, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', outputPath);
+      args.push('-y', '-i', source.path, '-c:v', 'libx264', '-preset', 'ultrafast', '-movflags', 'faststart', '-pix_fmt', 'yuv420p', outputPath);
       break;
     case 'thumbnail-extractor':
       args.push('-y', '-ss', String(body.time || '00:00:01'), '-i', source.path, '-vframes', '1', outputPath);
