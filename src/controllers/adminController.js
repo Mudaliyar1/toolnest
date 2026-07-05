@@ -104,7 +104,7 @@ async function renderProcessingManagement(req, res) {
   const allTools = getAllTools();
   
   res.render('admin/processing', {
-    title: 'Processing Management | ToolNest',
+    title: 'Processing Management | RaiseTool',
     systemSettings: settings,
     serverLoad,
     metrics: {

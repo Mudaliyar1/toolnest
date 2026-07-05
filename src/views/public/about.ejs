@@ -1,41 +1,331 @@
 <% layout('layouts/main') -%>
-<section class="container py-5">
-  <div class="row align-items-center g-5">
-    <div class="col-lg-6">
-      <h1 class="display-6 fw-semibold text-dark mb-4">About ToolNest</h1>
-      <p class="lead text-secondary mb-3">ToolNest is a high-availability, professional utility platform built with node, express, mongodb, and styled with vanilla Bootstrap 5.</p>
-      <p class="text-secondary mb-4">Our objective is to deliver quick, anonymous, and premium tools for document management, image optimization, developer conversions, student calculations, and business auditing. We prioritize maximum privacy and delete all uploaded and processed files automatically after 10 minutes.</p>
-      <a href="/workspace" class="btn btn-primary">Open My Workspace</a>
+
+<style>
+  /* Developer-First Clean CSS System */
+  .rt-about-wrapper {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+  }
+
+  /* Breadcrumb/Monospace indicators */
+  .rt-mono-label {
+    font-family: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #2563eb;
+  }
+
+  /* Sharp modern titles */
+  .rt-h1 {
+    font-size: 2.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+  }
+
+  .rt-h2 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+
+  /* Clean minimal card */
+  .rt-dev-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .rt-dev-card:hover {
+    border-color: #94a3b8;
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  /* Custom outline SVG icon wrapper */
+  .rt-icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+  }
+
+  /* Specific theme accents */
+  .rt-icon-blue {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #dbeafe;
+  }
+
+  .rt-icon-green {
+    color: #10b981;
+    background-color: #ecfdf5;
+    border-color: #d1fae5;
+  }
+
+  .rt-icon-cyan {
+    color: #06b6d4;
+    background-color: #ecfeff;
+    border-color: #cffafe;
+  }
+
+  .rt-icon-orange {
+    color: #f97316;
+    background-color: #fff7ed;
+    border-color: #ffedd5;
+  }
+
+  .rt-icon-teal {
+    color: #0d9488;
+    background-color: #f0fdfa;
+    border-color: #ccfbf1;
+  }
+
+  /* Left-border git-like blockquote */
+  .rt-quote-block {
+    border-left: 3px solid #2563eb;
+    padding-left: 20px;
+    margin: 20px 0;
+  }
+
+  /* System pipeline list */
+  .rt-pipeline-step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .rt-pipeline-step:last-child {
+    border-bottom: none;
+  }
+
+  .rt-step-number {
+    font-family: monospace;
+    font-weight: 700;
+    color: #94a3b8;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  /* Footer Minimal Call to Action */
+  .rt-cta-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+  }
+</style>
+
+<div class="rt-about-wrapper">
+  <!-- Minimalist Clean Hero Section -->
+  <header class="py-5 border-bottom bg-light bg-opacity-30">
+    <div class="container py-4">
+      <div class="row">
+        <div class="col-lg-9">
+          <div class="rt-mono-label mb-2">[ raise-tool // about ]</div>
+          <h1 class="rt-h1 mb-3">About RaiseTool</h1>
+          <p class="fs-5 text-secondary fw-normal mb-0" style="max-width: 800px;">
+            RaiseTool was founded by <strong>Vijay Mudaliyar</strong> with a simple vision: to create a platform where people can access powerful online tools quickly, securely, and without unnecessary complexity.
+          </p>
+        </div>
+      </div>
     </div>
-    <div class="col-lg-6">
-      <div class="card bg-light border border-light shadow-sm">
-        <div class="card-body p-4 p-lg-5">
-          <h2 class="h5 fw-semibold text-dark mb-3">Core Pillars</h2>
-          <div class="vstack gap-3">
-            <div class="d-flex align-items-start gap-3">
-              <div class="bg-white border rounded p-2 text-primary fw-bold">01</div>
+  </header>
+
+  <!-- Origin Story & Profile Section -->
+  <section class="py-5">
+    <div class="container py-3">
+      <div class="row g-5">
+        <div class="col-lg-7">
+          <div class="rt-mono-label mb-2">01 / OVERVIEW</div>
+          <h2 class="rt-h2 mb-4">Origin & Mission</h2>
+          <p class="text-secondary mb-4">
+            The idea behind <strong>RaiseTool</strong> came from a common problem faced by millions of internet users every day. Whether it's compressing an image, editing a PDF, converting a video, generating a QR code, calculating GST, formatting JSON, or using other digital utilities, people often have to visit multiple websites to complete simple tasks. RaiseTool was created to bring these essential tools together in one convenient platform.
+          </p>
+          <p class="text-secondary mb-4">
+            Our goal is to provide fast, reliable, and easy-to-use solutions for students, professionals, developers, businesses, content creators, and everyday users. Every tool is designed to save time, improve productivity, and deliver a smooth user experience across desktop, tablet, and mobile devices.
+          </p>
+        </div>
+        <div class="col-lg-5">
+          <div class="rt-dev-card bg-light bg-opacity-40">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="rt-step-number fw-bold" style="width: 42px; height: 42px; border-radius: 8px; font-size: 1.1rem;">VM</div>
               <div>
-                <h3 class="h6 fw-semibold mb-1 text-dark">Strict Anonymity</h3>
-                <p class="text-secondary small mb-0">No login, no IP tracking. Sessions are stored as signed, encrypted secure tokens.</p>
+                <h4 class="h6 fw-bold text-dark mb-0">Vijay Mudaliyar</h4>
+                <p class="small text-secondary mb-0">Founder of RaiseTool</p>
               </div>
             </div>
-            <div class="d-flex align-items-start gap-3">
-              <div class="bg-white border rounded p-2 text-primary fw-bold">02</div>
-              <div>
-                <h3 class="h6 fw-semibold mb-1 text-dark">Auto Cleanup</h3>
-                <p class="text-secondary small mb-0">All workspace assets are automatically deleted from server memory and filesystems within 10 minutes.</p>
-              </div>
+            <div class="rt-quote-block">
+              <p class="text-secondary small italic mb-0">
+                "We design utilities that operate directly inside the user's browser whenever possible. Keeping processing client-side removes unnecessary server transfers and gives users control over their files."
+              </p>
             </div>
-            <div class="d-flex align-items-start gap-3">
-              <div class="bg-white border rounded p-2 text-primary fw-bold">03</div>
-              <div>
-                <h3 class="h6 fw-semibold mb-1 text-dark">Production Grade Security</h3>
-                <p class="text-secondary small mb-0">Engineered with rate limiting, Slow Down middleware, CSRF tokens, XSS protection, and Helmet CSP settings.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Principles Grid -->
+  <section class="py-5 border-top bg-light bg-opacity-20">
+    <div class="container py-3">
+      <div class="row mb-5">
+        <div class="col-lg-8">
+          <div class="rt-mono-label mb-2">02 / ARCHITECTURE</div>
+          <h2 class="rt-h2">Core Principles</h2>
+          <p class="text-secondary mb-0">We hold RaiseTool utilities to strict engineering design guidelines.</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- Fast and efficient -->
+        <div class="col-md-6 col-lg-4">
+          <div class="rt-dev-card h-100">
+            <div class="rt-icon-box rt-icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+              </svg>
+            </div>
+            <h3 class="h6 fw-bold text-dark mb-2">Fast and efficient</h3>
+            <p class="text-secondary small mb-0">Utilities process instantly. Local compilation and lightweight servers ensure swift execution with no queuing.</p>
+          </div>
+        </div>
+
+        <!-- Secure and privacy-focused -->
+        <div class="col-md-6 col-lg-4">
+          <div class="rt-dev-card h-100">
+            <div class="rt-icon-box rt-icon-green">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            </div>
+            <h3 class="h6 fw-bold text-dark mb-2">Secure and privacy-focused</h3>
+            <p class="text-secondary small mb-0">Files are checked client-side, and server paths are scheduled to auto-delete within 10 minutes of inactivity.</p>
+          </div>
+        </div>
+
+        <!-- Accessible from any device -->
+        <div class="col-md-6 col-lg-4">
+          <div class="rt-dev-card h-100">
+            <div class="rt-icon-box rt-icon-cyan">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+              </svg>
+            </div>
+            <h3 class="h6 fw-bold text-dark mb-2">Accessible from any device</h3>
+            <p class="text-secondary small mb-0">Adaptable fluid layout allows you to convert, compress, and inspect files from mobile, tablet, or desktop.</p>
+          </div>
+        </div>
+
+        <!-- Easy to use for everyone -->
+        <div class="col-md-6 col-lg-4">
+          <div class="rt-dev-card h-100">
+            <div class="rt-icon-box rt-icon-orange">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V5.25A2.25 2.25 0 0018 3h-2.25m-3.75 0h-3.75M9 3H5.25A2.25 2.25 0 003 5.25v13.5A2.25 2.25 0 005.25 21h3.75m3 .75h3.75m-.375-3H15m0-3h3m-3-3h3m-16.5-6h16.5" />
+              </svg>
+            </div>
+            <h3 class="h6 fw-bold text-dark mb-2">Easy to use for everyone</h3>
+            <p class="text-secondary small mb-0">No login walls or setup parameters. Simple controls let you load files and download results instantly.</p>
+          </div>
+        </div>
+
+        <!-- Free whenever possible -->
+        <div class="col-md-6 col-lg-4">
+          <div class="rt-dev-card h-100">
+            <div class="rt-icon-box rt-icon-teal">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21L8.188 15.904L3 15L8.188 14.096L9 9L9.813 14.096L15 15L9.813 15.904Z M19.071 4.929l-.536 3.182l-3.182.536l3.182.536l.536 3.182l.536-3.182l3.182-.536l-3.182-.536l-.536-3.182Z" />
+              </svg>
+            </div>
+            <h3 class="h6 fw-bold text-dark mb-2">Free whenever possible</h3>
+            <p class="text-secondary small mb-0">No account required, no subscription paywalls, and no functional limits on your standard processing tools.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detailed Security Section -->
+  <section class="py-5 border-top border-bottom bg-white">
+    <div class="container py-3">
+      <div class="row g-5 align-items-center">
+        <div class="col-lg-6">
+          <div class="rt-mono-label mb-2">03 / TRUST</div>
+          <h2 class="rt-h2 mb-4">Privacy & Security First</h2>
+          <p class="text-secondary mb-4">
+            Privacy and security are at the core of our platform. Whenever possible, files are processed directly within the user's browser, ensuring that data never leaves the device.
+          </p>
+          <p class="text-secondary mb-4">
+            For tools that require server-side processing, files are handled securely and are automatically removed after a limited period. Our systems are designed with user privacy, performance, and reliability in mind.
+          </p>
+          <p class="text-secondary mb-4">
+            RaiseTool continues to evolve with new features, improved functionality, and additional tools based on user needs and feedback. Our mission is to build a trusted digital toolkit that helps people solve everyday problems quickly and efficiently without the need for complicated software installations.
+          </p>
+        </div>
+        <div class="col-lg-6">
+          <div class="rt-dev-card bg-light bg-opacity-30">
+            <h4 class="h6 fw-bold text-dark mb-4">Security Specification Sheet</h4>
+            <div class="vstack">
+              <div class="rt-pipeline-step">
+                <div class="rt-step-number">01</div>
+                <div>
+                  <h5 class="h6 fw-bold text-dark mb-1">Local Processing First</h5>
+                  <p class="small text-secondary mb-0">WASM sandbox structures allow operations to run completely client-side in the browser.</p>
+                </div>
+              </div>
+              <div class="rt-pipeline-step">
+                <div class="rt-step-number">02</div>
+                <div>
+                  <h5 class="h6 fw-bold text-dark mb-1">Automated Deletion</h5>
+                  <p class="small text-secondary mb-0">All workspace objects and directories are deleted from local servers automatically.</p>
+                </div>
+              </div>
+              <div class="rt-pipeline-step">
+                <div class="rt-step-number">03</div>
+                <div>
+                  <h5 class="h6 fw-bold text-dark mb-1">Proactive Scanning</h5>
+                  <p class="small text-secondary mb-0">System verifies uploaded file headers, blocking anomalous script injections.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- CTA section -->
+  <section class="container my-5">
+    <div class="rt-cta-box">
+      <h2 class="rt-h2 mb-3">Simplify Your Workflows</h2>
+      <p class="text-secondary mb-4 mx-auto" style="max-width: 600px;">
+        What started as a simple idea has grown into a platform dedicated to making digital tasks easier for everyone. As technology advances, RaiseTool will continue expanding and improving to provide smarter, faster, and more useful solutions for users around the world.
+      </p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="/workspace" class="btn btn-primary btn-lg px-4 py-2.5 fw-semibold shadow-sm">Open My Workspace</a>
+        <a href="/categories" class="btn btn-outline-secondary btn-lg px-4 py-2.5 fw-semibold">Browse 50+ Tools</a>
+      </div>
+    </div>
+  </section>
+</div>

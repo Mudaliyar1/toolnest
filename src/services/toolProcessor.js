@@ -434,7 +434,7 @@ async function processImageTool(slug, file, body, outputDir) {
       mimeType = 'image/webp';
       break;
     case 'watermark-image': {
-      const overlay = Buffer.from(`<svg width="500" height="120"><text x="20" y="70" font-size="44" font-family="Arial" fill="rgba(255,255,255,0.7)">${String(body.text || 'ToolNest')}</text></svg>`);
+      const overlay = Buffer.from(`<svg width="500" height="120"><text x="20" y="70" font-size="44" font-family="Arial" fill="rgba(255,255,255,0.7)">${String(body.text || 'RaiseTool')}</text></svg>`);
       pipeline = pipeline.composite([{ input: overlay, gravity: 'southeast' }]);
       break;
     }
@@ -812,7 +812,7 @@ async function processPdfTool(slug, files, body, outputDir) {
       const font = await pdfSource.embedFont(StandardFonts.Helvetica);
       pdfSource.getPages().forEach((page, index) => {
         if (slug === 'add-watermark') {
-          page.drawText(String(body.watermark || 'ToolNest'), {
+          page.drawText(String(body.watermark || 'RaiseTool'), {
             x: 40,
             y: page.getHeight() / 2,
             size: 36,

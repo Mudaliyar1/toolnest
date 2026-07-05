@@ -3,8 +3,8 @@ const Admin = require('../models/Admin');
 const env = require('../config/env');
 const { sign, verifySignedValue } = require('../utils/cookies');
 
-const ADMIN_COOKIE = 'tn_admin';
-const ADMIN_EMAIL = env.adminEmail || 'admin@toolnest.local';
+const ADMIN_COOKIE = 'rt_admin';
+const ADMIN_EMAIL = env.adminEmail || 'admin@raisetool.local';
 const PASSWORD_ITERATIONS = 120000;
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {

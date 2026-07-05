@@ -1,7 +1,7 @@
 {
-  "name": "toolnest",
+  "name": "raisetool",
   "version": "1.0.0",
-  "description": "ToolNest is a production-oriented multi-utility platform for file and productivity tools.",
+  "description": "RaiseTool is a production-oriented multi-utility platform for file and productivity tools.",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon server.js",

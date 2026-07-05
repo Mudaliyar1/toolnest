@@ -2,7 +2,7 @@ const { toolCatalog, getAllTools } = require('../data/toolCatalog');
 
 function renderHome(req, res) {
   res.render('public/home', {
-    title: 'ToolNest | Professional Utility Platform',
+    title: 'RaiseTool | Professional Utility Platform',
     toolCatalog,
     tools: getAllTools(),
     workspace: req.workspace,
@@ -12,7 +12,7 @@ function renderHome(req, res) {
 
 function renderCategories(req, res) {
   res.render('public/categories', {
-    title: 'Categories | ToolNest',
+    title: 'Categories | RaiseTool',
     toolCatalog,
     workspace: req.workspace,
     csrfToken: req.csrfToken()
@@ -28,7 +28,7 @@ function renderCategory(req, res, next) {
   }
 
   res.render('public/category', {
-    title: `${category.title} | ToolNest`,
+    title: `${category.title} | RaiseTool`,
     category,
     workspace: req.workspace,
     csrfToken: req.csrfToken()
@@ -37,7 +37,7 @@ function renderCategory(req, res, next) {
 
 function renderPrivacy(req, res) {
   res.render('public/privacy', {
-    title: 'Privacy Policy | ToolNest',
+    title: 'Privacy Policy | RaiseTool',
     workspace: req.workspace,
     csrfToken: req.csrfToken()
   });
@@ -45,7 +45,7 @@ function renderPrivacy(req, res) {
 
 function renderTerms(req, res) {
   res.render('public/terms', {
-    title: 'Terms of Service | ToolNest',
+    title: 'Terms of Service | RaiseTool',
     workspace: req.workspace,
     csrfToken: req.csrfToken()
   });
@@ -53,7 +53,7 @@ function renderTerms(req, res) {
 
 function renderContact(req, res) {
   res.render('public/contact', {
-    title: 'Contact Us | ToolNest',
+    title: 'Contact Us | RaiseTool',
     workspace: req.workspace,
     csrfToken: req.csrfToken(),
     success: null
@@ -62,7 +62,7 @@ function renderContact(req, res) {
 
 function renderAbout(req, res) {
   res.render('public/about', {
-    title: 'About | ToolNest',
+    title: 'About | RaiseTool',
     workspace: req.workspace,
     csrfToken: req.csrfToken()
   });
@@ -71,7 +71,7 @@ function renderAbout(req, res) {
 function handleContactSubmit(req, res) {
   // In production, we'd log this or send an email, then render with success message
   res.render('public/contact', {
-    title: 'Contact Us | ToolNest',
+    title: 'Contact Us | RaiseTool',
     workspace: req.workspace,
     csrfToken: req.csrfToken(),
     success: 'Thank you for your message! Our team will get back to you shortly.'

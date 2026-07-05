@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <% const resolvedSiteName = typeof siteName !== 'undefined' ? siteName : 'ToolNest'; %>
+  <% const resolvedSiteName = typeof siteName !== 'undefined' ? siteName : 'RaiseTool'; %>
   <% const resolvedSiteUrl = typeof siteUrl !== 'undefined' ? siteUrl : ''; %>
   <% const resolvedCurrentPath = typeof currentPath !== 'undefined' ? currentPath : '/'; %>
   <% const canonicalUrl = resolvedSiteUrl ? `${resolvedSiteUrl}${resolvedCurrentPath}` : '/'; %>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= typeof title !== 'undefined' && title ? title : resolvedSiteName %></title>
-  <meta name="description" content="ToolNest is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
+  <meta name="description" content="RaiseTool is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
   <meta name="theme-color" content="#2563eb">
   <link rel="canonical" href="<%= canonicalUrl %>">
   <link rel="stylesheet" href="/vendor/bootstrap.min.css">

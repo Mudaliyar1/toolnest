@@ -15,7 +15,7 @@ cloudinary.config({
 async function uploadToCloudinary(filePath, options = {}) {
   try {
     const uploadOptions = {
-      folder: 'toolnest',
+      folder: 'raisetool',
       resource_type: 'auto',
       ...options
     };

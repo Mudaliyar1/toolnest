@@ -22,7 +22,7 @@ async function renderToolPage(req, res, next) {
     const processingConfig = getProcessingConfigForTool(settings, tool);
 
     return res.render('public/tool', {
-      title: `${tool.name} | ToolNest`,
+      title: `${tool.name} | RaiseTool`,
       tool,
       workspace: req.workspace,
       csrfToken: req.csrfToken(),
@@ -180,7 +180,7 @@ async function handleToolExecution(req, res, next) {
     }
 
     return res.render('public/tool', {
-      title: `${tool.name} | ToolNest`,
+      title: `${tool.name} | RaiseTool`,
       tool,
       workspace: req.workspace,
       csrfToken: req.csrfToken(),
@@ -242,7 +242,7 @@ async function handleToolExecution(req, res, next) {
     }
 
     return res.render('public/tool', {
-      title: `${tool.name} | ToolNest`,
+      title: `${tool.name} | RaiseTool`,
       tool,
       workspace: req.workspace,
       csrfToken: req.csrfToken(),

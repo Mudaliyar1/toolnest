@@ -17,7 +17,7 @@ module.exports = async function settingsMiddleware(req, res, next) {
     if (settings.emergencyMode.maintenanceMode && !isAdminRoute && !isStaticAsset) {
       res.status(503);
       return res.render('errors/maintenance', {
-        title: 'Maintenance Mode | ToolNest',
+        title: 'Maintenance Mode | RaiseTool',
         siteName: env.siteName
       });
     }

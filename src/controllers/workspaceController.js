@@ -16,7 +16,7 @@ function groupFiles(files) {
 async function renderWorkspace(req, res) {
   const files = req.workspaceFiles || [];
   res.render('public/workspace', {
-    title: 'My Workspace | ToolNest',
+    title: 'My Workspace | RaiseTool',
     workspace: req.workspace,
     files: groupFiles(files),
     csrfToken: req.csrfToken()

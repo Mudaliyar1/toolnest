@@ -8,7 +8,7 @@ async function bootstrap() {
   startCleanupScheduler();
 
   const server = app.listen(env.port, () => {
-    console.log(`ToolNest listening on port ${env.port}`);
+    console.log(`RaiseTool listening on port ${env.port}`);
   });
 
   server.timeout = 10 * 60 * 1000; // 10 minutes
@@ -17,6 +17,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error) => {
-  console.error('Failed to bootstrap ToolNest', error.message);
+  console.error('Failed to bootstrap RaiseTool', error.message);
   process.exitCode = 1;
 });
