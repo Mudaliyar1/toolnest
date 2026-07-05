@@ -644,11 +644,71 @@ async function processPdfTool(slug, files, body, outputDir) {
     }
 
     const pages = doc.getPageCount();
+    if (pages <= 1) {
+      throw new Error('This PDF contains only one page.');
+    }
+
+    const mode = String(body.mode || 'range');
+    const targetPages = [];
+
+    if (mode === 'all') {
+      for (let i = 1; i <= pages; i++) {
+        targetPages.push(i);
+      }
+    } else {
+      const pagesInput = String(body.pages || '').trim();
+      if (!pagesInput) {
+        throw new Error('Please specify the page range (e.g. 1-2, 4).');
+      }
+
+      const parts = pagesInput.split(',');
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+
+        if (trimmed.includes('-')) {
+          const [startStr, endStr] = trimmed.split('-');
+          const start = parseInt(startStr.trim(), 10);
+          const end = parseInt(endStr.trim(), 10);
+
+          if (isNaN(start) || isNaN(end)) {
+            throw new Error(`Invalid page range format: "${trimmed}".`);
+          }
+          if (start < 1 || start > pages || end < 1 || end > pages) {
+            throw new Error(`Page range "${trimmed}" is out of bounds. The PDF contains only ${pages} pages.`);
+          }
+          if (start > end) {
+            throw new Error(`Invalid range: start page ${start} is greater than end page ${end}.`);
+          }
+
+          for (let i = start; i <= end; i++) {
+            targetPages.push(i);
+          }
+        } else {
+          const num = parseInt(trimmed, 10);
+          if (isNaN(num)) {
+            throw new Error(`Invalid page number format: "${trimmed}".`);
+          }
+          if (num < 1 || num > pages) {
+            throw new Error(`Page number ${num} is out of bounds. The PDF contains only ${pages} pages.`);
+          }
+          targetPages.push(num);
+        }
+      }
+    }
+
+    // Filter duplicates and sort page numbers
+    const uniquePages = Array.from(new Set(targetPages)).sort((a, b) => a - b);
+    if (!uniquePages.length) {
+      throw new Error('No valid pages selected for splitting.');
+    }
+
     const splitOutputs = [];
 
     try {
-      for (let index = 0; index < pages; index += 1) {
-        const fileName = `page-${index + 1}.pdf`;
+      for (const pageNum of uniquePages) {
+        const index = pageNum - 1; // 0-based index for muhammara
+        const fileName = `page-${pageNum}.pdf`;
         const filePath = path.join(outputDir, fileName);
         const writer = muhammara.createWriter(filePath);
         writer.appendPDFPagesFromPDF(pathToUse, {
@@ -666,10 +726,13 @@ async function processPdfTool(slug, files, body, outputDir) {
       }
     }
 
-    const zipName = createStorageName('split-pages.zip', '.zip');
-    const zipPath = path.join(outputDir, zipName);
-    await zipFiles(zipPath, splitOutputs);
-    return { kind: 'file', title: 'Split PDF Pages', files: [{ path: zipPath, name: zipName, mimeType: 'application/zip' }] };
+    const filesToReturn = splitOutputs.map(out => ({
+      path: out.path,
+      name: out.name,
+      mimeType: 'application/pdf'
+    }));
+
+    return { kind: 'file', title: 'Split PDF Pages', files: filesToReturn };
   }
 
   if (slug === 'compress-pdf') {
