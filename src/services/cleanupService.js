@@ -14,8 +14,14 @@ async function removeExpiredFilesAndWorkspaces() {
   }
 
   const now = new Date();
-  const expiredFiles = await File.find({ expireTime: { $lte: now } }).lean();
-  const expiredWorkspaces = await Workspace.find({ expiresAt: { $lte: now } }).lean();
+
+  const expiredFiles = await File.find({
+    expireTime: { $lte: now }
+  }).lean();
+
+  const expiredWorkspaces = await Workspace.find({
+    expiresAt: { $lte: now }
+  }).lean();
 
   // Find all files belonging to expired workspaces to prevent orphans on Cloudinary/Disk
   const expiredWorkspaceIds = expiredWorkspaces.map((w) => w.workspaceId);

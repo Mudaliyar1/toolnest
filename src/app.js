@@ -35,11 +35,12 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
+      workerSrc: ["'self'", "blob:"],
       imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       mediaSrc: ["'self'", 'blob:'],
       fontSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
       frameAncestors: ["'none'"]
     }
   },
@@ -68,6 +69,8 @@ app.use(slowDown({
 
 app.use(express.static(env.publicDir, { maxAge: env.env === 'production' ? '7d' : 0 }));
 
+const settingsMiddleware = require('./middleware/settingsMiddleware');
+app.use(settingsMiddleware);
 app.use(workspaceContext);
 
 app.use((req, res, next) => {
@@ -75,6 +78,7 @@ app.use((req, res, next) => {
   res.locals.siteUrl = env.siteUrl;
   res.locals.currentPath = req.path || '/';
   res.locals.adminAccessPath = env.adminAccessPath;
+  res.locals.systemSettings = req.systemSettings;
   next();
 });
 

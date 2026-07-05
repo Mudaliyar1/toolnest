@@ -892,6 +892,17 @@ async function processVideoTool(slug, files, body, outputDir) {
 
       args.push('-y', '-i', source.path);
 
+      // Determine dynamic resolution scaling based on input file size to guarantee compression under 1 minute
+      const inputSizeMb = (await fs.stat(source.path)).size / (1024 * 1024);
+      let maxScaleHeight = 1080;
+      if (inputSizeMb >= 300) {
+        maxScaleHeight = 360;
+      } else if (inputSizeMb >= 100) {
+        maxScaleHeight = 480;
+      } else if (inputSizeMb >= 20) {
+        maxScaleHeight = 720;
+      }
+
       if (totalBitrate < 40000) {
         // If target size is tiny, drop audio track entirely to save bits
         args.push('-an');
@@ -899,7 +910,8 @@ async function processVideoTool(slug, files, body, outputDir) {
         if (videoBitrate < 4000) {
           videoBitrate = 4000; // Absolute minimum 4 kbps
         }
-        args.push('-vf', 'scale=120:-2');
+        const targetHeight = Math.min(maxScaleHeight, 120);
+        args.push('-vf', `scale=-2:${targetHeight}`);
       } else {
         if (totalBitrate < 160000) {
           audioBitrate = 32000;
@@ -916,12 +928,18 @@ async function processVideoTool(slug, files, body, outputDir) {
           videoBitrate = 15000;
         }
 
+        let bitrateScaleHeight = 1080;
         if (videoBitrate < 120000) {
-          args.push('-vf', 'scale=240:-2');
+          bitrateScaleHeight = 240;
         } else if (videoBitrate < 300000) {
-          args.push('-vf', 'scale=480:-2');
+          bitrateScaleHeight = 480;
         } else if (videoBitrate < 800000) {
-          args.push('-vf', 'scale=720:-2');
+          bitrateScaleHeight = 720;
+        }
+
+        const targetHeight = Math.min(maxScaleHeight, bitrateScaleHeight);
+        if (targetHeight < 1080) {
+          args.push('-vf', `scale=-2:${targetHeight}`);
         }
 
         const audioBitrateKbps = Math.round(audioBitrate / 1000);
@@ -932,7 +950,7 @@ async function processVideoTool(slug, files, body, outputDir) {
 
       args.push(
         '-c:v', 'libx264',
-        '-preset', 'veryfast',
+        '-preset', 'ultrafast',
         '-b:v', `${videoBitrateKbps}k`,
         '-maxrate', `${videoBitrateKbps}k`,
         '-bufsize', `${videoBitrateKbps * 2}k`,
@@ -969,9 +987,23 @@ async function processVideoTool(slug, files, body, outputDir) {
     case 'video-mute-tool':
       args.push('-y', '-i', source.path, '-c', 'copy', '-an', outputPath);
       break;
-    case 'video-speed-controller':
-      args.push('-y', '-i', source.path, '-filter_complex', `[0:v]setpts=${1 / (Number.parseFloat(body.speed) || 1)}*PTS[v];[0:a]atempo=${Math.min(Math.max(Number.parseFloat(body.speed) || 1, 0.5), 2)}[a]`, '-map', '[v]', '-map', '[a]', outputPath);
+    case 'video-speed-controller': {
+      const speedInputMb = (await fs.stat(source.path)).size / (1024 * 1024);
+      let speedScale = '';
+      if (speedInputMb >= 100) {
+        speedScale = ',scale=-2:480';
+      } else if (speedInputMb >= 20) {
+        speedScale = ',scale=-2:720';
+      }
+      args.push(
+        '-y', '-i', source.path,
+        '-preset', 'ultrafast',
+        '-filter_complex', `[0:v]setpts=${1 / (Number.parseFloat(body.speed) || 1)}*PTS${speedScale}[v];[0:a]atempo=${Math.min(Math.max(Number.parseFloat(body.speed) || 1, 0.5), 2)}[a]`,
+        '-map', '[v]', '-map', '[a]',
+        outputPath
+      );
       break;
+    }
     default:
       throw new Error('This video tool is not wired yet.');
   }

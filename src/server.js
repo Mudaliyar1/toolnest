@@ -7,9 +7,13 @@ async function bootstrap() {
   await connectDb();
   startCleanupScheduler();
 
-  app.listen(env.port, () => {
+  const server = app.listen(env.port, () => {
     console.log(`ToolNest listening on port ${env.port}`);
   });
+
+  server.timeout = 10 * 60 * 1000; // 10 minutes
+  server.keepAliveTimeout = 10 * 60 * 1000;
+  server.headersTimeout = 10 * 60 * 1000 + 5000;
 }
 
 bootstrap().catch((error) => {

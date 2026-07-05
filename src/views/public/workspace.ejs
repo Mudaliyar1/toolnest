@@ -1,5 +1,14 @@
 <% layout('layouts/main') -%>
-<section class="container py-5 py-lg-6">
+<%
+  const durationToMs = (val, unit) => {
+    const v = Number(val) || 0;
+    if (unit === 'seconds') return v * 1000;
+    if (unit === 'hours') return v * 60 * 60 * 1000;
+    return v * 60 * 1000;
+  };
+  const downloadRetentionMs = durationToMs(systemSettings.downloadRetentionValue || 2, systemSettings.downloadRetentionUnit || 'minutes');
+%>
+<section class="container py-5 py-lg-6" id="workspace-container" data-download-retention-ms="<%= downloadRetentionMs %>">
   <div class="card shadow-sm border-0">
     <div class="card-body p-4 p-lg-5">
       <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
@@ -38,11 +47,12 @@
           <h2 class="h5 fw-semibold mb-3">Uploaded Files</h2>
           <div class="d-grid gap-2">
             <% (files.uploaded || []).forEach((file) => { %>
-              <div class="border rounded-3 p-3 bg-light">
+              <div class="border rounded-3 p-3 bg-light file-card">
                 <div class="d-flex justify-content-between align-items-start gap-2">
                   <div>
                     <div class="fw-medium"><%= file.processedName %></div>
                     <div class="small text-secondary"><%= file.fileType %> &middot; <%= file.fileSize %> bytes</div>
+                    <div class="file-countdown-timer small text-warning mt-1" data-file-id="<%= file._id %>" data-expires="<%= file.expireTime %>">Expires in: --:--</div>
                   </div>
                   <form method="post" action="/workspace/files/<%= file._id %>/delete">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -58,14 +68,15 @@
           <h2 class="h5 fw-semibold mb-3">Processed Files</h2>
           <div class="d-grid gap-2">
             <% (files.processed || []).forEach((file) => { %>
-              <div class="border rounded-3 p-3 bg-light">
+              <div class="border rounded-3 p-3 bg-light file-card">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                   <div>
                     <div class="fw-medium"><%= file.processedName %></div>
                     <div class="small text-secondary"><%= file.fileType %> &middot; <%= file.fileSize %> bytes</div>
+                    <div class="file-countdown-timer small text-warning mt-1" data-file-id="<%= file._id %>" data-expires="<%= file.expireTime %>">Expires in: --:--</div>
                   </div>
                   <div class="d-flex gap-2">
-                    <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm" download="<%= file.processedName %>">Download</a>
+                    <a href="/workspace/files/<%= file._id %>/download" class="btn btn-outline-primary btn-sm download-btn" data-file-id="<%= file._id %>" download="<%= file.processedName %>">Download</a>
                     <form method="post" action="/workspace/files/<%= file._id %>/delete">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>

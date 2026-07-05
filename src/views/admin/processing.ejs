@@ -1,0 +1,363 @@
+<% layout('layouts/main') -%>
+<section class="container py-5">
+  <div class="row g-4">
+    <!-- Header -->
+    <div class="col-12">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+              <li class="breadcrumb-item"><a href="<%= adminAccessPath %>/dashboard">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Processing Settings</li>
+            </ol>
+          </nav>
+          <h1 class="display-6 fw-bold mb-0">Processing & Storage Control Center</h1>
+        </div>
+        <div class="d-flex gap-2">
+          <form method="post" action="<%= adminAccessPath %>/processing/purge" class="d-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline-warning">Purge Expired Files</button>
+          </form>
+          <form method="post" action="<%= adminAccessPath %>/processing/purge-all" class="d-inline" onsubmit="return confirm('WARNING: This will permanently delete ALL active workspaces, database records, and Cloudinary uploads. Proceed?');">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-danger">Purge All Assets</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Notifications -->
+    <% if (success) { %>
+      <div class="col-12">
+        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show" role="alert">
+          <strong>Success!</strong> <%= success %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      </div>
+    <% } %>
+    <% if (error) { %>
+      <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show" role="alert">
+          <strong>Error!</strong> <%= error %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Server Load & Storage Stats Cards -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">🖥️ Server Hardware Load</h2>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small fw-medium mb-1">
+              <span>CPU Utilization</span>
+              <span><%= serverLoad.cpu %>%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-<%= serverLoad.cpu > 75 ? 'danger' : serverLoad.cpu > 50 ? 'warning' : 'primary' %>" <%= 'style="width: ' + serverLoad.cpu + '%;"' %>></div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small fw-medium mb-1">
+              <span>RAM (Memory) Utilization</span>
+              <span><%= serverLoad.ram %>%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-<%= serverLoad.ram > 75 ? 'danger' : serverLoad.ram > 50 ? 'warning' : 'success' %>" <%= 'style="width: ' + serverLoad.ram + '%;"' %>></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3">📁 Cloud & Storage Statistics</h2>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="small text-secondary d-block">Active Files</span>
+                <span class="fs-4 fw-bold text-dark"><%= metrics.activeFiles %></span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="small text-secondary d-block">Expired Files</span>
+                <span class="fs-4 fw-bold text-warning"><%= metrics.expiredFiles %></span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="small text-secondary d-block">Cloudinary Assets</span>
+                <span class="fs-4 fw-bold text-primary"><%= metrics.cloudinaryAssets %></span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="small text-secondary d-block">Local Storage Assets</span>
+                <span class="fs-4 fw-bold text-success"><%= metrics.localFiles %></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration Panel Form -->
+    <div class="col-12">
+      <form method="post" action="<%= adminAccessPath %>/processing">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        
+        <div class="row g-4">
+          <!-- Global Storage Settings -->
+          <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-3 text-dark">📦 Storage Strategy</h3>
+                <p class="small text-secondary">Choose how uploaded and converted files are cached globally across the platform.</p>
+                <div class="vstack gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="storageStrategy" id="strat-hybrid" value="hybrid" <%= systemSettings.storageStrategy === 'hybrid' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="strat-hybrid">
+                      Hybrid Smart Mode (Recommended)
+                      <span class="d-block small fw-normal text-secondary">Sizes determine strategy dynamically (Local vs Cloudinary vs Browser).</span>
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="storageStrategy" id="strat-browser" value="browser" <%= systemSettings.storageStrategy === 'browser' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="strat-browser">
+                      Browser Processing Only
+                      <span class="d-block small fw-normal text-secondary">Zero server uploads. Runs completely client-side in the sandbox.</span>
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="storageStrategy" id="strat-cloudinary" value="cloudinary" <%= systemSettings.storageStrategy === 'cloudinary' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="strat-cloudinary">
+                      Cloudinary Only Mode
+                      <span class="d-block small fw-normal text-secondary">Direct cloud uploads, skipping permanent server files.</span>
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="storageStrategy" id="strat-server" value="server" <%= systemSettings.storageStrategy === 'server' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="strat-server">
+                      Server Only Storage
+                      <span class="d-block small fw-normal text-secondary">Disables Cloudinary, caching uploads purely on disk.</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Processing System Switches -->
+          <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-3 text-dark">⚙️ Core Systems Toggle</h3>
+                <p class="small text-secondary">Enable or disable specific features of the processing architecture.</p>
+                <div class="vstack gap-3 mt-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="browserProcessingEnabled" id="toggle-browser" <%= systemSettings.browserProcessingEnabled ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="toggle-browser">
+                      Browser Processing Engine
+                      <span class="d-block small fw-normal text-secondary">Allow in-browser conversion and processing logic.</span>
+                    </label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="serverProcessingEnabled" id="toggle-server" <%= systemSettings.serverProcessingEnabled ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="toggle-server">
+                      Server Processing Engine
+                      <span class="d-block small fw-normal text-secondary">Allow FFmpeg-based local server processing tasks.</span>
+                    </label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="cloudinaryEnabled" id="toggle-cloudinary" <%= systemSettings.cloudinaryEnabled ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold text-dark" for="toggle-cloudinary">
+                      Cloudinary Integrations
+                      <span class="d-block small fw-normal text-secondary">Enable Cloudinary upload routines.</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Retention & Load Balancer Settings -->
+          <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-3 text-dark">⏳ Rules & Load Balancer</h3>
+                
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-secondary">Active Download Expiration</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" name="downloadRetentionValue" value="<%= systemSettings.downloadRetentionValue || 2 %>" class="form-control" min="1" required>
+                    <select name="downloadRetentionUnit" class="form-select">
+                      <option value="seconds" <%= systemSettings.downloadRetentionUnit === 'seconds' ? 'selected' : '' %>>Seconds</option>
+                      <option value="minutes" <%= systemSettings.downloadRetentionUnit === 'minutes' ? 'selected' : '' %>>Minutes</option>
+                      <option value="hours" <%= systemSettings.downloadRetentionUnit === 'hours' ? 'selected' : '' %>>Hours</option>
+                    </select>
+                  </div>
+                  <span class="d-block small text-muted mt-1">Timer started for a file when its download button is clicked.</span>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-secondary">Inactive Fallback Expiration</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" name="fallbackRetentionValue" value="<%= systemSettings.fallbackRetentionValue || 10 %>" class="form-control" min="1" required>
+                    <select name="fallbackRetentionUnit" class="form-select">
+                      <option value="seconds" <%= systemSettings.fallbackRetentionUnit === 'seconds' ? 'selected' : '' %>>Seconds</option>
+                      <option value="minutes" <%= systemSettings.fallbackRetentionUnit === 'minutes' ? 'selected' : '' %>>Minutes</option>
+                      <option value="hours" <%= systemSettings.fallbackRetentionUnit === 'hours' ? 'selected' : '' %>>Hours</option>
+                    </select>
+                  </div>
+                  <span class="d-block small text-muted mt-1">Fallback timeout if the user does not download the file.</span>
+                </div>
+
+                <hr>
+
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" name="loadBalancerEnabled" id="toggle-lb" <%= systemSettings.loadBalancerEnabled ? 'checked' : '' %>>
+                  <label class="form-check-label fw-bold text-dark" for="toggle-lb">Auto Load Balancer</label>
+                </div>
+                <p class="small text-secondary mb-3">Shifts server tasks to client browser when load exceeds thresholds.</p>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small fw-medium">Max CPU %</label>
+                    <input type="number" name="loadBalancerThresholdCpu" value="<%= systemSettings.loadBalancerThresholdCpu %>" class="form-control form-control-sm" min="1" max="100">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-medium">Max RAM %</label>
+                    <input type="number" name="loadBalancerThresholdRam" value="<%= systemSettings.loadBalancerThresholdRam %>" class="form-control form-control-sm" min="1" max="100">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergency Mode Control Panel -->
+          <div class="col-12">
+            <div class="card border-danger border-2 shadow-sm">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold text-danger mb-2">🚨 Emergency System Controls (Immediate Enforcement)</h3>
+                <p class="small text-secondary mb-4">Toggle parameters to immediately scale down or lockdown specific server components during high load or platform maintenance.</p>
+                
+                <div class="row g-3">
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="maintenanceMode" id="em-maintenance" <%= systemSettings.emergencyMode.maintenanceMode ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-maintenance">Maintenance Mode</label>
+                    </div>
+                    <span class="d-block small text-secondary">Renders Maintenance page to all visitors. Admins bypassed.</span>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="uploadsDisabled" id="em-uploads" <%= systemSettings.emergencyMode.uploadsDisabled ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-uploads">Disable File Uploads</label>
+                    </div>
+                    <span class="d-block small text-secondary">Blocks any incoming files to server.</span>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="videoDisabled" id="em-video" <%= systemSettings.emergencyMode.videoDisabled ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-video">Disable Video Tools</label>
+                    </div>
+                    <span class="d-block small text-secondary">Restricts access to FFmpeg video conversion/compress.</span>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="audioDisabled" id="em-audio" <%= systemSettings.emergencyMode.audioDisabled ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-audio">Disable Audio Tools</label>
+                    </div>
+                    <span class="d-block small text-secondary">Restricts access to all audio conversion/compress.</span>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="cloudinaryUploadsDisabled" id="em-cloud-uploads" <%= systemSettings.emergencyMode.cloudinaryUploadsDisabled ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-cloud-uploads">Disable Cloudinary Uploads</label>
+                    </div>
+                    <span class="d-block small text-secondary">Stops all uploads to Cloudinary storage.</span>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="processingDisabled" id="em-processing" <%= systemSettings.emergencyMode.processingDisabled ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold text-dark" for="em-processing">Disable All Processing</label>
+                    </div>
+                    <span class="d-block small text-secondary">Blocks server and client-side processing completely.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tool Level Overrides Table -->
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-3 text-dark">📋 Tool-Level Processing & Upload Configurations</h3>
+                <p class="small text-secondary">Set specific processing models and upload constraints per tool. Size limits default to 15MB if left empty.</p>
+                
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle table-hover">
+                    <thead>
+                      <tr>
+                        <th>Tool Name</th>
+                        <th>Category</th>
+                        <th>Processing Strategy</th>
+                        <th>Storage Mode</th>
+                        <th>Size Limit (MB)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% allTools.forEach((t) => { 
+                        const ov = systemSettings.toolOverrides.find(o => o.toolSlug === t.slug) || {};
+                      %>
+                        <tr>
+                          <td>
+                            <strong class="text-dark"><%= t.name %></strong>
+                            <span class="d-block small text-muted font-monospace"><%= t.slug %></span>
+                          </td>
+                          <td>
+                            <span class="badge bg-light text-primary border"><%= t.category %></span>
+                          </td>
+                          <td>
+                            <select name="override_proc_<%= t.slug %>" class="form-select form-select-sm">
+                              <option value="default" <%= ov.processingMethod === 'default' ? 'selected' : '' %>>Global default</option>
+                              <option value="browser" <%= ov.processingMethod === 'browser' ? 'selected' : '' %>>Force Browser</option>
+                              <option value="server" <%= ov.processingMethod === 'server' ? 'selected' : '' %>>Force Server</option>
+                              <option value="cloudinary" <%= ov.processingMethod === 'cloudinary' ? 'selected' : '' %>>Force Cloudinary</option>
+                            </select>
+                          </td>
+                          <td>
+                            <select name="override_store_<%= t.slug %>" class="form-select form-select-sm">
+                              <option value="default" <%= ov.storageMethod === 'default' ? 'selected' : '' %>>Global default</option>
+                              <option value="browser" <%= ov.storageMethod === 'browser' ? 'selected' : '' %>>Force Local Browser</option>
+                              <option value="server" <%= ov.storageMethod === 'server' ? 'selected' : '' %>>Force Local Server</option>
+                              <option value="cloudinary" <%= ov.storageMethod === 'cloudinary' ? 'selected' : '' %>>Force Cloudinary</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input type="number" name="override_limit_<%= t.slug %>" value="<%= ov.uploadLimitMb || '' %>" placeholder="15" class="form-control form-control-sm" min="1" max="1000">
+                          </td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sticky Submit Bar -->
+          <div class="col-12 text-end pt-3">
+            <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm">Save Infrastructure Configurations</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

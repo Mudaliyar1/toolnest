@@ -8,8 +8,28 @@ const execFileAsync = promisify(execFile);
 
 async function quickHeuristicScan(filePath) {
   const buffer = await fs.readFile(filePath);
-  const text = buffer.subarray(0, 2048).toString('utf8').toLowerCase();
-  const suspiciousPatterns = ['<script', 'powershell', 'cmd.exe', 'eval(', 'createobject(', 'base64_decode'];
+  // Scan up to 8KB to run fast and prevent memory issues with large files
+  const text = buffer.subarray(0, 8192).toString('utf8').toLowerCase();
+  const suspiciousPatterns = [
+    '<script',
+    'javascript:',
+    'onload=',
+    'onerror=',
+    'powershell',
+    'cmd.exe',
+    'eval(',
+    'base64_decode',
+    'union select',
+    'union all select',
+    'select * from',
+    'drop table',
+    'insert into',
+    'or 1=1',
+    "or '1'='1'",
+    'or "1"="1"',
+    "admin' --",
+    "admin'--"
+  ];
 
   return !suspiciousPatterns.some((pattern) => text.includes(pattern));
 }

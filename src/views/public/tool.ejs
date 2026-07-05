@@ -90,6 +90,60 @@
     <div class="col-12 col-xxl-10">
       <div class="card shadow-sm border-0">
         <div class="card-body p-4 p-lg-5">
+          <!-- Config and Scripts Serialization -->
+          <script id="processing-config" type="application/json">
+            <%- JSON.stringify(processingConfig) %>
+          </script>
+          
+          <% if (processingConfig && processingConfig.method === 'browser') { %>
+            <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+              <span style="font-size: 1.3rem;">🔒</span>
+              <div><strong>Privacy Notice:</strong> Your files never leave your device. Processing occurs entirely inside your browser.</div>
+            </div>
+            <% if (['merge-pdf', 'split-pdf', 'compress-pdf', 'pdf-page-numbering', 'image-to-pdf', 'rotate-pdf', 'extract-pages', 'delete-pages', 'add-watermark'].includes(tool.slug)) { %>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <% } %>
+            <% if (tool.slug === 'qr-generator') { %>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <% } %>
+            <% if (tool.slug === 'barcode-generator') { %>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <% } %>
+            <% if (['video', 'audio'].includes(tool.category)) { %>
+              <script>
+                (function() {
+                  const FFMPEG_CDNS = [
+                    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
+                    'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
+                  ];
+                  window._ffmpegLoadStatus = 'loading';
+                  function tryLoad(index) {
+                    if (index >= FFMPEG_CDNS.length) {
+                      window._ffmpegLoadStatus = 'failed';
+                      return;
+                    }
+                    var s = document.createElement('script');
+                    s.src = FFMPEG_CDNS[index];
+                    s.crossOrigin = 'anonymous';
+                    s.onload = function() {
+                      if (typeof FFmpeg !== 'undefined' && FFmpeg.createFFmpeg) {
+                        window._ffmpegLoadStatus = 'ready';
+                      } else { tryLoad(index + 1); }
+                    };
+                    s.onerror = function() { tryLoad(index + 1); };
+                    document.head.appendChild(s);
+                  }
+                  tryLoad(0);
+                })();
+              </script>
+            <% } %>
+          <% } else if (processingConfig && processingConfig.method === 'disabled') { %>
+            <div class="alert alert-danger border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+              <span style="font-size: 1.3rem;">⚠️</span>
+              <div><strong>Notice:</strong> Tool processing is temporarily disabled by the administrator. Please check back later.</div>
+            </div>
+          <% } %>
+
           <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-end">
             <div>
               <p class="text-uppercase small fw-semibold text-primary mb-2"><%= tool.categoryTitle %></p>
@@ -829,6 +883,27 @@
             </div>
           </form>
 
+          <!-- Browser Processing Results Container -->
+          <div id="browser-result-container" class="card bg-light border-0 mt-4 d-none">
+            <div class="card-body">
+              <h2 id="browser-result-title" class="h5 fw-semibold mb-3">Processed Results</h2>
+              <div id="browser-result-success" class="alert alert-success border-0 shadow-sm mb-3 d-flex align-items-center gap-2">
+                <span style="font-size: 1.3rem;">✅</span>
+                <div><strong>Success!</strong> Processed locally in your browser. Download or copy your result below.</div>
+              </div>
+              <div id="browser-result-text-wrapper" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small text-secondary fw-semibold">Output Content</span>
+                  <button type="button" id="btn-copy-browser-text" class="btn btn-sm btn-outline-secondary px-3">Copy Text</button>
+                </div>
+                <pre id="browser-result-text" class="bg-white border rounded-3 p-3 mb-0 text-wrap"></pre>
+              </div>
+              <div id="browser-result-file-list" class="d-grid gap-2 d-none">
+                <!-- Dynamically generated items -->
+              </div>
+            </div>
+          </div>
+
           <% if (result) { %>
             <% if (result.kind === 'error') { %>
               <div class="alert alert-danger border-0 shadow-sm mt-4 mb-0 p-3" role="alert">
@@ -889,5 +964,53 @@
     </div>
   </div>
 </section>
+
+<!-- Browser Processing Modal (Popup) -->
+<div class="modal fade" id="browserProcessingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="browserProcessingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-dark w-100 text-center" id="browserProcessingModalLabel">Browser Processing</h5>
+        <button type="button" class="btn-close d-none" id="btn-close-browser-modal" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center px-4 py-5 d-flex flex-column align-items-center justify-content-center">
+        <!-- Progress Spinner / Micro-animation -->
+        <div id="browser-modal-spinner" class="mb-4">
+          <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem; border-width: 0.35em;">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        
+        <!-- Status Text -->
+        <div class="h5 fw-semibold text-dark mb-2" id="browser-modal-status">Initialising processing engine...</div>
+        
+        <!-- Center-Aligned Premium Progress Bar -->
+        <div class="w-100 mb-4 px-3" id="browser-modal-progress-container">
+          <div class="progress" style="height: 12px; border-radius: 6px;">
+            <div id="browser-modal-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%; border-radius: 6px;"></div>
+          </div>
+        </div>
+        
+        <!-- Countdown Timer -->
+        <div id="browser-modal-timer-container" class="small text-secondary mb-3">
+          Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">30</span> seconds
+        </div>
+        
+        <!-- Dynamic Result & Download Section (hidden by default) -->
+        <div id="browser-modal-result-section" class="w-100 mt-2 d-none">
+          <hr class="my-4 text-muted">
+          <div class="bg-light rounded-3 p-3 border text-start mb-3 d-flex align-items-center justify-content-between">
+            <div class="text-truncate me-2">
+              <div id="browser-modal-result-filename" class="fw-semibold text-dark text-truncate">output_file.ext</div>
+              <div id="browser-modal-result-size" class="small text-muted font-monospace mt-1">0 KB</div>
+            </div>
+            <a href="#" id="browser-modal-download-btn" class="btn btn-primary px-4 py-2 fw-medium shadow-sm" download>Download</a>
+          </div>
+          <button type="button" class="btn btn-outline-secondary w-100 py-2" data-bs-dismiss="modal">Close Window</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/js/tool.js" defer></script>

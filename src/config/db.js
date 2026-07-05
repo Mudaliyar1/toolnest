@@ -7,8 +7,8 @@ async function connectDb() {
   try {
     await mongoose.connect(env.mongoUri, {
       autoIndex: env.env !== 'production',
-      serverSelectionTimeoutMS: 3000,
-      connectTimeoutMS: 3000
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
     });
     return true;
   } catch (error) {

@@ -52,7 +52,11 @@ async function createWorkspaceDocument() {
   const workspaceId = `ws_${crypto.randomUUID()}`;
   const token = createToken();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + env.workspaceTtlMinutes * 60 * 1000);
+
+  const { getSettings, durationToMs } = require('./settingsService');
+  const settings = await getSettings();
+  const fallbackMs = durationToMs(settings.fallbackRetentionValue || 10, settings.fallbackRetentionUnit || 'minutes');
+  const expiresAt = new Date(now.getTime() + fallbackMs);
 
   const workspace = await Workspace.create({
     workspaceId,
@@ -144,10 +148,16 @@ async function ensureWorkspaceContext(req, res, next) {
       }
     } else {
       if (dbConnected) {
+        const { getSettings, durationToMs } = require('./settingsService');
+        const settings = await getSettings();
+        const fallbackMs = durationToMs(settings.fallbackRetentionValue || 10, settings.fallbackRetentionUnit || 'minutes');
+        const newExpiry = new Date(Date.now() + fallbackMs);
+
         await Workspace.updateOne(
           { workspaceId: workspaceData.workspace.workspaceId },
-          { $set: { lastActivity: new Date() } }
+          { $set: { lastActivity: new Date(), expiresAt: newExpiry } }
         );
+        workspaceData.workspace.expiresAt = newExpiry;
       }
       await persistWorkspaceCookies(res, workspaceData.workspace.workspaceId, workspaceData.token);
       req.workspaceCreated = false;
@@ -168,7 +178,10 @@ async function ensureWorkspaceContext(req, res, next) {
     req.workspaceToken = workspaceData.token;
 
     if (dbConnected) {
-      req.workspaceFiles = await File.find({ workspaceId: req.workspace.workspaceId })
+      req.workspaceFiles = await File.find({
+        workspaceId: req.workspace.workspaceId,
+        expireTime: { $gt: new Date() }
+      })
         .sort({ uploadTime: -1 })
         .lean();
     } else {

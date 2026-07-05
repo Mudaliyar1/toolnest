@@ -1,0 +1,68 @@
+<% layout('layouts/main') -%>
+<section class="container py-5 py-lg-6">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-lg-5">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
+        <div>
+          <p class="text-uppercase small fw-semibold text-primary mb-2">Admin dashboard</p>
+          <h1 class="display-6 fw-semibold mb-2">System Overview</h1>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <a href="<%= adminAccessPath %>/processing" class="btn btn-primary">⚙️ Processing Settings</a>
+          <form method="post" action="<%= adminAccessPath %>/logout" class="d-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline-secondary">Sign out</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-3">
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Visitors</div><div class="fs-3 fw-semibold"><%= metrics.totalVisitors %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Active Users</div><div class="fs-3 fw-semibold"><%= metrics.activeUsers %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Today's Visitors</div><div class="fs-3 fw-semibold"><%= metrics.todayVisitors %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Monthly Visitors</div><div class="fs-3 fw-semibold"><%= metrics.monthlyVisitors %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Sessions</div><div class="fs-3 fw-semibold"><%= metrics.totalSessions %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Tool Usage</div><div class="fs-3 fw-semibold"><%= metrics.totalToolUsage %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Active Files</div><div class="fs-3 fw-semibold"><%= metrics.activeFiles %></div></div></div>
+        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Expired Files</div><div class="fs-3 fw-semibold"><%= metrics.expiredFiles %></div></div></div>
+      </div>
+
+      <div class="row g-4 mt-1">
+        <div class="col-lg-6">
+          <div class="card h-100 border-0 bg-light">
+            <div class="card-body">
+              <h2 class="h5 fw-semibold">Server Health</h2>
+              <p class="mb-1 text-secondary">Status: <%= metrics.serverHealth.status %></p>
+              <p class="mb-0 text-secondary">Uptime: <%= Math.floor(metrics.serverHealth.uptime) %> seconds</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100 border-0 bg-light">
+            <div class="card-body">
+              <h2 class="h5 fw-semibold mb-3">Most Used Tools</h2>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Tool</th>
+                      <th class="text-end">Usage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% mostUsedTools.forEach((tool) => { %>
+                      <tr>
+                        <td><%= tool.toolName %></td>
+                        <td class="text-end fw-semibold"><%= tool.totalUsage %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
