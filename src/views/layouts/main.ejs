@@ -20,7 +20,7 @@
           <link rel="stylesheet" href="/css/app.css">
 </head>
 
-<body class="d-flex flex-column min-vh-100" data-pwa-cache="<%= systemSettings.pwaOfflineCache !== false %>">
+<body class="d-flex flex-column min-vh-100" data-pwa-cache="<%= (typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaOfflineCache !== false) %>">
   <%- include('../partials/header') %>
     <main class="flex-grow-1">
       <%- body %>
@@ -50,6 +50,139 @@
 
       <script>
         document.addEventListener('DOMContentLoaded', () => {
+          // PWA Single Page Application (SPA) No-Refresh Router
+          function isRunningAsPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true || 
+                   document.referrer.includes('android-app://');
+          }
+
+          if (isRunningAsPWA()) {
+            console.log('[PWA] Standalone mode detected. Initializing SPA Navigation Router.');
+
+            // Helper to show/hide dynamic top progress line
+            function showPWALoader() {
+              let loader = document.getElementById('pwa-nav-loader');
+              if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'pwa-nav-loader';
+                loader.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,#0d9488,#0284c7);box-shadow:0 0 10px rgba(13,148,136,0.5),0 0 5px rgba(2,132,199,0.5);z-index:99999;transition:width 0.4s cubic-bezier(0.1,0.8,0.1,1);';
+                document.body.appendChild(loader);
+              }
+              loader.style.width = '0%';
+              loader.style.opacity = '1';
+              loader.offsetHeight; // force reflow
+              loader.style.width = '70%';
+            }
+
+            function hidePWALoader() {
+              const loader = document.getElementById('pwa-nav-loader');
+              if (loader) {
+                loader.style.width = '100%';
+                setTimeout(() => {
+                  loader.style.opacity = '0';
+                  setTimeout(() => { loader.style.width = '0%'; }, 300);
+                }, 200);
+              }
+            }
+
+            // Extract and re-execute main view scripts
+            function reExecuteMainScripts(container) {
+              const scripts = container.querySelectorAll('script');
+              scripts.forEach((oldScript) => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+              });
+            }
+
+            function updateActiveNavLinks(path) {
+              const navItems = document.querySelectorAll('.mobile-bottom-nav .nav-item');
+              navItems.forEach(item => {
+                const itemPath = item.getAttribute('data-path');
+                if (path === itemPath || (itemPath !== '/' && path.startsWith(itemPath))) {
+                  item.classList.add('active');
+                } else {
+                  item.classList.remove('active');
+                }
+              });
+
+              const headerLinks = document.querySelectorAll('.navbar-nav .nav-link');
+              headerLinks.forEach(link => {
+                try {
+                  const linkPath = new URL(link.href, window.location.origin).pathname;
+                  if (path === linkPath) {
+                    link.classList.add('active');
+                  } else {
+                    link.classList.remove('active');
+                  }
+                } catch(e) {}
+              });
+            }
+
+            async function navigateToPage(urlPath, pushState = true) {
+              try {
+                showPWALoader();
+                const response = await fetch(urlPath);
+                if (!response.ok) throw new Error('Network response not ok');
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const currentMain = document.querySelector('main');
+                const newMain = doc.querySelector('main');
+                if (currentMain && newMain) {
+                  currentMain.innerHTML = newMain.innerHTML;
+                  reExecuteMainScripts(currentMain);
+                }
+                
+                document.title = doc.title;
+                if (pushState) {
+                  history.pushState({ path: urlPath }, doc.title, urlPath);
+                }
+                updateActiveNavLinks(urlPath);
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                hidePWALoader();
+              } catch (err) {
+                console.warn('[PWA Router] SPA navigation failed. Falling back to reload:', err);
+                window.location.href = urlPath;
+              }
+            }
+
+            // Intercept internal link navigation clicks
+            document.addEventListener('click', (e) => {
+              const link = e.target.closest('a');
+              if (!link) return;
+
+              const href = link.getAttribute('href');
+              if (!href) return;
+
+              // Skip non-navigation anchors
+              if (href.startsWith('#') || href.startsWith('javascript:') || link.getAttribute('target') === '_blank') {
+                return;
+              }
+
+              const url = new URL(link.href, window.location.origin);
+              if (url.origin !== window.location.origin) return;
+
+              // Skip administrative or download links
+              if (link.hasAttribute('download') || 
+                  url.pathname.startsWith('/admin') || 
+                  (url.pathname.startsWith('/workspace/files/') && url.pathname.endsWith('/download'))) {
+                return;
+              }
+
+              e.preventDefault();
+              navigateToPage(url.pathname + url.search);
+            });
+
+            // Popstate handling
+            window.addEventListener('popstate', () => {
+              navigateToPage(window.location.pathname + window.location.search, false);
+            });
+          }
+
           const currentPath = window.location.pathname;
           const navItems = document.querySelectorAll('.mobile-bottom-nav .nav-item');
           navItems.forEach(item => {
@@ -62,7 +195,7 @@
           // Service Worker Registration
           const pwaCacheEnabled = document.body.getAttribute('data-pwa-cache') !== 'false';
           if ('serviceWorker' in navigator && pwaCacheEnabled) {
-            const pwaVersion = '<%= systemSettings.pwaCacheVersion || 1 %>';
+            const pwaVersion = '<%= typeof systemSettings !== "undefined" && systemSettings && systemSettings.pwaCacheVersion || 1 %>';
             
             // Reload page on controller change (forces fresh UI when SW updates)
             let refreshing = false;
