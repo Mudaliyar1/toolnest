@@ -484,7 +484,8 @@
                                                       , 'audio-merger' ].includes(slug)) { %>
                                                       <div class="form-text text-muted mb-2">💡 Tip: You can select and
                                                         upload multiple files at once using <strong>Ctrl/Cmd</strong> or
-                                                        <strong>Shift</strong> key.</div>
+                                                        <strong>Shift</strong> key.
+                                                      </div>
                                                       <% } %>
 
                                                         <!-- Media Preview Card -->
@@ -1646,9 +1647,9 @@
                                                   </div>
                                                 </div>
                                                 <% } else { %>
-                                                  <div class="card bg-light border-0 mt-4">
+                                                  <div class="card border-0 mt-4 p-2 bg-light">
                                                     <div class="card-body">
-                                                      <h2 class="h5 fw-semibold mb-3">
+                                                      <h2 class="h5 fw-bold text-dark mb-3">
                                                         <%= result.title %>
                                                       </h2>
                                                       <% if (result.kind==='text' ) { %>
@@ -1665,8 +1666,9 @@
                                                           <div class="d-grid gap-2">
                                                             <% resultRecords.forEach((file)=> { %>
                                                               <div
-                                                                class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
-                                                                <div class="fw-medium">
+                                                                class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border-0 shadow-sm rounded-3 p-3 mb-2"
+                                                                style="border: 1px solid rgba(226, 232, 240, 0.6) !important;">
+                                                                <div class="fw-semibold text-dark">
                                                                   <%= file.processedName %>
                                                                 </div>
                                                                 <a href="/workspace/files/<%= file._id %>/download"

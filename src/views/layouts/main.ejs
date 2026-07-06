@@ -1,25 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <% const resolvedSiteName = typeof siteName !== 'undefined' ? siteName : 'RaiseTool'; %>
-  <% const resolvedSiteUrl = typeof siteUrl !== 'undefined' ? siteUrl : ''; %>
-  <% const resolvedCurrentPath = typeof currentPath !== 'undefined' ? currentPath : '/'; %>
-  <% const canonicalUrl = resolvedSiteUrl ? `${resolvedSiteUrl}${resolvedCurrentPath}` : '/'; %>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= typeof title !== 'undefined' && title ? title : resolvedSiteName %></title>
-  <meta name="description" content="RaiseTool is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
-  <meta name="theme-color" content="#2563eb">
-  <link rel="canonical" href="<%= canonicalUrl %>">
-  <link rel="stylesheet" href="/vendor/bootstrap.min.css">
-  <link rel="stylesheet" href="/css/app.css">
+  <% const resolvedSiteName=typeof siteName !=='undefined' ? siteName : 'RaiseTool' ; %>
+    <% const resolvedSiteUrl=typeof siteUrl !=='undefined' ? siteUrl : '' ; %>
+      <% const resolvedCurrentPath=typeof currentPath !=='undefined' ? currentPath : '/' ; %>
+        <% const canonicalUrl=resolvedSiteUrl ? `${resolvedSiteUrl}${resolvedCurrentPath}` : '/' ; %>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>
+            <%= typeof title !=='undefined' && title ? title : resolvedSiteName %>
+          </title>
+          <meta name="description"
+            content="RaiseTool is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
+          <meta name="theme-color" content="#2563eb">
+          <link rel="canonical" href="<%= canonicalUrl %>">
+          <link rel="stylesheet" href="/vendor/bootstrap.min.css">
+          <link rel="stylesheet" href="/css/app.css">
 </head>
-<body class="d-flex flex-column min-vh-100 bg-light text-dark">
+
+<body class="d-flex flex-column min-vh-100">
   <%- include('../partials/header') %>
-  <main class="flex-grow-1">
-    <%- body %>
-  </main>
-  <%- include('../partials/footer') %>
-  <script src="/vendor/bootstrap.bundle.min.js" defer></script>
+    <main class="flex-grow-1">
+      <%- body %>
+    </main>
+    <%- include('../partials/footer') %>
+      <script src="/vendor/bootstrap.bundle.min.js" defer></script>
+      
+      <!-- Mobile Bottom Control Center (iOS Liquid Glass Navbar) -->
+      <div class="mobile-bottom-nav d-lg-none d-flex justify-content-around align-items-center">
+        <a href="/" class="nav-item" data-path="/">
+          <div class="nav-icon">🏠</div>
+          <div class="nav-label">Home</div>
+        </a>
+        <a href="/categories" class="nav-item" data-path="/categories">
+          <div class="nav-icon">📁</div>
+          <div class="nav-label">Categories</div>
+        </a>
+        <a href="/workspace" class="nav-item" data-path="/workspace">
+          <div class="nav-icon">💼</div>
+          <div class="nav-label">Workspace</div>
+        </a>
+        <a href="/about" class="nav-item" data-path="/about">
+          <div class="nav-icon">💡</div>
+          <div class="nav-label">About</div>
+        </a>
+      </div>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const currentPath = window.location.pathname;
+          const navItems = document.querySelectorAll('.mobile-bottom-nav .nav-item');
+          navItems.forEach(item => {
+            const itemPath = item.getAttribute('data-path');
+            if (currentPath === itemPath || (itemPath !== '/' && currentPath.startsWith(itemPath))) {
+              item.classList.add('active');
+            }
+          });
+        });
+      </script>
 </body>
+
 </html>
