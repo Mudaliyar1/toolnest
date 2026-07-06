@@ -1161,7 +1161,7 @@
         throw new Error('This tool is not supported in browser-only processing mode.');
       }
     }
-  });
+  }
 
   // Determine tool category from slug
   function getToolCategory(slug) {
