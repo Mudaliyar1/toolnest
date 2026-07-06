@@ -424,6 +424,7 @@ pre {
   animation: splash-pulse-scale 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
   background: linear-gradient(135deg, #0d9488, #0284c7);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 20px rgba(2, 132, 199, 0.4));
 }
