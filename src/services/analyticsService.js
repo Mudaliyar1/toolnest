@@ -23,6 +23,18 @@ function getIpHash(req) {
   return crypto.createHash('sha256').update(String(ip)).digest('hex');
 }
 
+const httpTracker = {
+  totalRequests: 0,
+  activeRequests: 0,
+  totalLatencyMs: 0,
+  statusCodes: {
+    '2xx': 0,
+    '3xx': 0,
+    '4xx': 0,
+    '5xx': 0
+  }
+};
+
 async function recordWorkspaceVisit(req) {
   const mongoose = require('mongoose');
   if (mongoose.connection.readyState !== 1) {
@@ -45,6 +57,7 @@ async function recordWorkspaceVisit(req) {
   if (req.workspaceCreated) {
     await Visitor.create({
       ipHash: getIpHash(req),
+      workspaceId: req.workspace ? req.workspace.workspaceId : null,
       country: req.headers['cf-ipcountry'] || 'unknown',
       browser: getBrowser(req.headers['user-agent']),
       device: getDevice(req.headers['user-agent']),
@@ -55,7 +68,21 @@ async function recordWorkspaceVisit(req) {
 }
 
 function analyticsMiddleware(req, res, next) {
+  httpTracker.totalRequests++;
+  httpTracker.activeRequests++;
+  const startTime = Date.now();
+
   res.on('finish', () => {
+    httpTracker.activeRequests = Math.max(0, httpTracker.activeRequests - 1);
+    const duration = Date.now() - startTime;
+    httpTracker.totalLatencyMs += duration;
+
+    const cat = Math.floor(res.statusCode / 100);
+    if (cat === 2) httpTracker.statusCodes['2xx']++;
+    else if (cat === 3) httpTracker.statusCodes['3xx']++;
+    else if (cat === 4) httpTracker.statusCodes['4xx']++;
+    else if (cat === 5) httpTracker.statusCodes['5xx']++;
+
     const contentType = String(res.getHeader('content-type') || '');
     if (res.statusCode === 200 && contentType.includes('text/html')) {
       recordWorkspaceVisit(req).catch((error) => {
@@ -72,5 +99,7 @@ module.exports = {
   getBrowser,
   getDevice,
   getIpHash,
-  recordWorkspaceVisit
+  recordWorkspaceVisit,
+  httpTracker
 };
+

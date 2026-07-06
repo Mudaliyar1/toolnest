@@ -1,0 +1,382 @@
+<% layout('layouts/admin') -%>
+<section class="container-fluid px-0 py-3">
+  <!-- Title Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+    <div>
+      <p class="text-uppercase small fw-semibold text-primary mb-1">Diagnostics Control Center</p>
+      <h1 class="h2 fw-bold text-dark mb-0">Server Health & Performance</h1>
+    </div>
+    <div class="d-flex align-items-center mt-3 mt-sm-0">
+      <div class="form-check form-switch me-3">
+        <input class="form-check-input" type="checkbox" id="autoRefreshCheck" checked>
+        <label class="form-check-label small fw-semibold text-secondary" for="autoRefreshCheck">
+          Auto Refresh (5s) <span id="countdownTimer" class="badge bg-light text-primary ms-1">5</span>
+        </label>
+      </div>
+      <a href="" class="btn btn-primary btn-sm rounded-3 shadow-sm px-3 py-2 fw-semibold" id="refreshBtn">
+        🔄 Refresh Now
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Card 1: CPU Load -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <p class="text-muted small fw-semibold text-uppercase mb-1">CPU Load</p>
+              <h3 class="fw-bold text-dark mb-0"><%= metrics.cpuLoadPercent %>%</h3>
+            </div>
+            <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
+              💻
+            </div>
+          </div>
+          <div class="progress rounded-pill mb-3" style="height: 6px;">
+            <div class="progress-bar bg-primary js-progress-bar" role="progressbar" data-width="<%= metrics.cpuLoadPercent %>%" aria-valuenow="<%= metrics.cpuLoadPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between text-secondary small">
+            <span>1m: <strong><%= metrics.cpuLoad1m %></strong></span>
+            <span>5m: <strong><%= metrics.cpuLoad5m %></strong></span>
+            <span>15m: <strong><%= metrics.cpuLoad15m %></strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Memory (RAM) Usage -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <p class="text-muted small fw-semibold text-uppercase mb-1">Memory (RAM)</p>
+              <h3 class="fw-bold text-dark mb-0"><%= metrics.memoryPercent %>%</h3>
+            </div>
+            <div class="bg-warning bg-opacity-10 text-warning p-2 rounded-3">
+              💾
+            </div>
+          </div>
+          <div class="progress rounded-pill mb-3" style="height: 6px;">
+            <div class="progress-bar bg-warning js-progress-bar" role="progressbar" data-width="<%= metrics.memoryPercent %>%" aria-valuenow="<%= metrics.memoryPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between text-secondary small">
+            <span>Used: <strong><%= metrics.memoryUsed %> GB</strong></span>
+            <span>Free: <strong><%= metrics.memoryFree %> GB</strong></span>
+            <span>Total: <strong><%= metrics.memoryTotal %> GB</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Node Process Heap -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <p class="text-muted small fw-semibold text-uppercase mb-1">Node JS Heap Used</p>
+              <h3 class="fw-bold text-dark mb-0"><%= metrics.nodeHeapUsed %> MB</h3>
+            </div>
+            <div class="bg-success bg-opacity-10 text-success p-2 rounded-3">
+              🟢
+            </div>
+          </div>
+          <div class="progress rounded-pill mb-3" style="height: 6px;">
+            <% const heapPct = Math.min(100, Math.round((parseFloat(metrics.nodeHeapUsed) / parseFloat(metrics.nodeHeapTotal)) * 100)) || 0; %>
+            <div class="progress-bar bg-success js-progress-bar" role="progressbar" data-width="<%= heapPct %>%" aria-valuenow="<%= heapPct %>" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between text-secondary small">
+            <span>Allocated: <strong><%= metrics.nodeHeapTotal %> MB</strong></span>
+            <span>RSS Weight: <strong><%= metrics.nodeRss %> MB</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: HTTP Latency & Network Requests -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <p class="text-muted small fw-semibold text-uppercase mb-1">HTTP Traffic & Speed</p>
+              <h3 class="fw-bold text-dark mb-0"><%= appDiagnostics.http.avgLatencyMs %> ms</h3>
+            </div>
+            <div class="bg-info bg-opacity-10 text-info p-2 rounded-3">
+              🌐
+            </div>
+          </div>
+          <div class="progress rounded-pill mb-3" style="height: 6px;">
+            <% const latencyScore = Math.min(100, Math.round((parseFloat(appDiagnostics.http.avgLatencyMs) / 1000) * 100)) || 0; %>
+            <div class="progress-bar bg-info js-progress-bar" role="progressbar" data-width="<%= latencyScore %>%" aria-valuenow="<%= latencyScore %>" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="d-flex justify-content-between text-secondary small">
+            <span>Total: <strong><%= appDiagnostics.http.totalRequests %> req</strong></span>
+            <span>Active: <strong><%= appDiagnostics.http.activeRequests %></strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .activity-pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+  </style>
+
+  <!-- Live Upload & Processing Activity Monitor -->
+  <div class="row g-4 mb-4">
+    <!-- Live Platform Process Logs -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+            <div class="d-flex align-items-center">
+              <span class="activity-pulse me-2"></span>
+              <h5 class="fw-bold text-dark mb-0">📡 Real-Time Media & File Processing Feed</h5>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-2 mt-sm-0">
+              <span class="badge bg-light text-primary px-3 py-2 rounded-pill font-monospace small">
+                Today: <strong><%= processedToday %> files</strong>
+              </span>
+              <span class="badge bg-light text-success px-3 py-2 rounded-pill font-monospace small">
+                Active Workspaces: <strong><%= activeWorkspacesToday %></strong>
+              </span>
+              <span class="badge bg-light text-secondary px-3 py-2 rounded-pill font-monospace small">
+                Total Processed: <strong><%= allTimeProcessed %></strong>
+              </span>
+            </div>
+          </div>
+
+          <% if (recentUploads && recentUploads.length > 0) { %>
+            <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>Original Filename</th>
+                    <th>Tool Applied</th>
+                    <th>Weight</th>
+                    <th>Destination</th>
+                    <th class="text-end">Processed Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% recentUploads.forEach((file) => { %>
+                    <tr>
+                      <td class="text-dark fw-semibold text-truncate" style="max-width: 250px;">
+                        <%= file.originalName %>
+                      </td>
+                      <td>
+                        <span class="badge bg-light text-primary px-2.5 py-1.5"><%= file.toolName %></span>
+                      </td>
+                      <td class="font-monospace text-secondary small">
+                        <%= (file.fileSize / (1024 * 1024)).toFixed(2) %> MB
+                      </td>
+                      <td>
+                        <% if (file.cloudinaryPublicId) { %>
+                          <span class="badge bg-info bg-opacity-10 text-info">Cloudinary Storage</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary bg-opacity-10 text-secondary">Local Storage</span>
+                        <% } %>
+                      </td>
+                      <td class="text-end text-muted small">
+                        <% const diff = Math.round((new Date() - new Date(file.uploadTime)) / 1000); %>
+                        <% if (diff < 60) { %>
+                          <span class="text-success fw-bold">Just now</span>
+                        <% } else if (diff < 3600) { %>
+                          <%= Math.round(diff / 60) %> mins ago
+                        <% } else { %>
+                          <%= new Date(file.uploadTime).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'}) %>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-5 text-secondary">
+              <span class="d-block mb-2 small">📡 Waiting for file processing events...</span>
+              <p class="mb-0 small text-muted">No files have been processed in this workspace session yet.</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- MongoDB Database Connection & Collection Diagnostics -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-4">🛢️ MongoDB Database Connection & Collections</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Database Connection Status</td>
+                  <td class="py-2">
+                    <% if (appDiagnostics.dbStatus === 'Connected') { %>
+                      <span class="badge bg-success bg-opacity-10 text-success fw-bold">● Connected</span>
+                    <% } else { %>
+                      <span class="badge bg-danger bg-opacity-10 text-danger fw-bold">● <%= appDiagnostics.dbStatus %></span>
+                    <% } %>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Database Name</td>
+                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.dbName %></td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Database Endpoint</td>
+                  <td class="font-monospace text-muted small py-2"><%= appDiagnostics.dbHost %></td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Workspace Channels count</td>
+                  <td class="font-monospace fw-bold text-dark py-2"><%= appDiagnostics.counts.workspace %> documents</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Processed Files count</td>
+                  <td class="font-monospace fw-bold text-dark py-2"><%= appDiagnostics.counts.file %> documents</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Tool Usage Analytics Logs</td>
+                  <td class="font-monospace fw-bold text-secondary py-2"><%= appDiagnostics.counts.toolUsage %> documents</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Registered Admin Accounts</td>
+                  <td class="font-monospace fw-bold text-secondary py-2"><%= appDiagnostics.counts.admin %> accounts</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Visitor Traffic Sessions</td>
+                  <td class="font-monospace text-muted py-2"><%= appDiagnostics.counts.visitor %> sessions</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Node.js Memory & Event Loop Execution Diagnostics -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-4">📦 Application Engine & V8 Execution Context</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <tbody>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Storage Strategy</td>
+                  <td class="py-2">
+                    <span class="badge bg-primary text-uppercase px-2.5 py-1.5"><%= appDiagnostics.settings.storageStrategy %></span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Cloudinary Upload Connection</td>
+                  <td class="py-2">
+                    <% if (appDiagnostics.settings.cloudinaryEnabled) { %>
+                      <span class="text-success small fw-semibold">Enabled</span>
+                    <% } else { %>
+                      <span class="text-danger small fw-semibold">Disabled</span>
+                    <% } %>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Cloudinary Processed Jobs</td>
+                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.settings.cloudinaryProcessedJobs %> uploads</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">V8 Resident Set Size (RSS)</td>
+                  <td class="font-monospace text-dark fw-bold py-2"><%= metrics.nodeRss %> MB</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">V8 Heap Allocations</td>
+                  <td class="font-monospace py-2">
+                    <span class="text-primary fw-bold"><%= metrics.nodeHeapUsed %> MB</span> / <span class="text-secondary"><%= metrics.nodeHeapTotal %> MB</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Node Event Loop Active Handles</td>
+                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.node.activeHandles %> handles</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Node Event Loop Active Requests</td>
+                  <td class="font-monospace text-secondary py-2"><%= appDiagnostics.node.activeRequests %> requests</td>
+                </tr>
+                <tr>
+                  <td class="text-secondary small fw-semibold py-2">Loaded Cached Node Modules</td>
+                  <td class="font-monospace text-muted py-2"><%= appDiagnostics.node.loadedModules %> modules</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Initialize progress bar widths
+    document.querySelectorAll('.js-progress-bar').forEach(bar => {
+      bar.style.width = bar.getAttribute('data-width');
+    });
+
+    const autoRefreshCheck = document.getElementById('autoRefreshCheck');
+    const countdownTimer = document.getElementById('countdownTimer');
+    let timeLeft = 5;
+    let timerInterval = null;
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timeLeft = 5;
+      countdownTimer.textContent = timeLeft;
+
+      timerInterval = setInterval(() => {
+        if (!autoRefreshCheck.checked) return;
+        timeLeft--;
+        countdownTimer.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          window.location.reload();
+        }
+      }, 1000);
+    }
+
+    autoRefreshCheck.addEventListener('change', () => {
+      if (autoRefreshCheck.checked) {
+        startTimer();
+      } else {
+        clearInterval(timerInterval);
+        countdownTimer.textContent = '-';
+      }
+    });
+
+    startTimer();
+  });
+</script>

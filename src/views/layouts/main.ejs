@@ -14,13 +14,15 @@
           <meta name="description"
             content="RaiseTool is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
           <meta name="theme-color" content="#0284c7">
-          <link rel="manifest" href="/manifest.json?v=<%= typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaCacheVersion || 1 %>">
+          <link rel="manifest"
+            href="/manifest.json?v=<%= typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaCacheVersion || 1 %>">
           <link rel="canonical" href="<%= canonicalUrl %>">
           <link rel="stylesheet" href="/vendor/bootstrap.min.css">
           <link rel="stylesheet" href="/css/app.css">
 </head>
 
-<body class="d-flex flex-column min-vh-100" data-pwa-cache="<%= (typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaOfflineCache !== false) %>">
+<body class="d-flex flex-column min-vh-100"
+  data-pwa-cache="<%= (typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaOfflineCache !== false) %>">
   <!-- YouTube-Style PWA Splash Screen -->
   <div id="pwa-splash-screen">
     <div class="splash-content">
@@ -35,7 +37,7 @@
     </main>
     <%- include('../partials/footer') %>
       <script src="/vendor/bootstrap.bundle.min.js" defer></script>
-      
+
       <!-- Mobile Bottom Control Center (iOS Liquid Glass Navbar) -->
       <div class="mobile-bottom-nav d-lg-none d-flex justify-content-around align-items-center">
         <a href="/" class="nav-item" data-path="/">
@@ -60,9 +62,9 @@
         document.addEventListener('DOMContentLoaded', () => {
           // PWA Single Page Application (SPA) No-Refresh Router
           function isRunningAsPWA() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true || 
-                   document.referrer.includes('android-app://');
+            return window.matchMedia('(display-mode: standalone)').matches ||
+              window.navigator.standalone === true ||
+              document.referrer.includes('android-app://');
           }
 
           // YouTube-Style PWA Splash Screen Controller
@@ -147,7 +149,7 @@
                   } else {
                     link.classList.remove('active');
                   }
-                } catch(e) {}
+                } catch (e) { }
               });
             }
 
@@ -166,7 +168,7 @@
                   currentMain.innerHTML = newMain.innerHTML;
                   reExecuteMainScripts(currentMain);
                 }
-                
+
                 document.title = doc.title;
                 if (pushState) {
                   history.pushState({ path: urlPath }, doc.title, urlPath);
@@ -197,9 +199,9 @@
               if (url.origin !== window.location.origin) return;
 
               // Skip administrative or download links
-              if (link.hasAttribute('download') || 
-                  url.pathname.startsWith('/admin') || 
-                  (url.pathname.startsWith('/workspace/files/') && url.pathname.endsWith('/download'))) {
+              if (link.hasAttribute('download') ||
+                url.pathname.startsWith('/admin') ||
+                (url.pathname.startsWith('/workspace/files/') && url.pathname.endsWith('/download'))) {
                 return;
               }
 
@@ -226,7 +228,7 @@
           const pwaCacheEnabled = document.body.getAttribute('data-pwa-cache') !== 'false';
           if ('serviceWorker' in navigator && pwaCacheEnabled) {
             const pwaVersion = '<%= typeof systemSettings !== "undefined" && systemSettings && systemSettings.pwaCacheVersion || 1 %>';
-            
+
             // Reload page on controller change (forces fresh UI when SW updates)
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {

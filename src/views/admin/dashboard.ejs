@@ -1,68 +1,317 @@
-<% layout('layouts/main') -%>
-<section class="container py-5 py-lg-6">
-  <div class="card shadow-sm border-0">
-    <div class="card-body p-4 p-lg-5">
-      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
-        <div>
-          <p class="text-uppercase small fw-semibold text-primary mb-2">Admin dashboard</p>
-          <h1 class="display-6 fw-semibold mb-2">System Overview</h1>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-          <a href="<%= adminAccessPath %>/processing" class="btn btn-primary">⚙️ Processing Settings</a>
-          <form method="post" action="<%= adminAccessPath %>/logout" class="d-inline">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-outline-secondary">Sign out</button>
-          </form>
-        </div>
-      </div>
+<% layout('layouts/admin') -%>
+<section class="container-fluid px-0 py-3">
+  <!-- Top Stats Filtering & Title Bar -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-uppercase small fw-semibold text-primary mb-1">Admin Dashboard</p>
+      <h1 class="h2 fw-bold text-dark mb-0">System Overview</h1>
+    </div>
+    
+    <!-- Dynamic Range Filter Tabs -->
+    <div class="btn-group shadow-sm bg-white p-1 rounded-3">
+      <a href="?range=all" class="btn btn-sm px-3 rounded-2 <%= currentRange === 'all' ? 'btn-primary text-white' : 'btn-link text-secondary text-decoration-none' %>">
+        All Time
+      </a>
+      <a href="?range=30days" class="btn btn-sm px-3 rounded-2 <%= currentRange === '30days' ? 'btn-primary text-white' : 'btn-link text-secondary text-decoration-none' %>">
+        30 Days
+      </a>
+      <a href="?range=7days" class="btn btn-sm px-3 rounded-2 <%= currentRange === '7days' ? 'btn-primary text-white' : 'btn-link text-secondary text-decoration-none' %>">
+        7 Days
+      </a>
+      <a href="?range=today" class="btn btn-sm px-3 rounded-2 <%= currentRange === 'today' ? 'btn-primary text-white' : 'btn-link text-secondary text-decoration-none' %>">
+        Today
+      </a>
+    </div>
+  </div>
 
-      <div class="row g-3 mt-3">
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Visitors</div><div class="fs-3 fw-semibold"><%= metrics.totalVisitors %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Active Users</div><div class="fs-3 fw-semibold"><%= metrics.activeUsers %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Today's Visitors</div><div class="fs-3 fw-semibold"><%= metrics.todayVisitors %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Monthly Visitors</div><div class="fs-3 fw-semibold"><%= metrics.monthlyVisitors %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Sessions</div><div class="fs-3 fw-semibold"><%= metrics.totalSessions %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Total Tool Usage</div><div class="fs-3 fw-semibold"><%= metrics.totalToolUsage %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Active Files</div><div class="fs-3 fw-semibold"><%= metrics.activeFiles %></div></div></div>
-        <div class="col-6 col-xl-3"><div class="p-3 bg-light border rounded-3 h-100"><div class="small text-secondary">Expired Files</div><div class="fs-3 fw-semibold"><%= metrics.expiredFiles %></div></div></div>
-      </div>
-
-      <div class="row g-4 mt-1">
-        <div class="col-lg-6">
-          <div class="card h-100 border-0 bg-light">
-            <div class="card-body">
-              <h2 class="h5 fw-semibold">Server Health</h2>
-              <p class="mb-1 text-secondary">Status: <%= metrics.serverHealth.status %></p>
-              <p class="mb-0 text-secondary">Uptime: <%= Math.floor(metrics.serverHealth.uptime) %> seconds</p>
-            </div>
+  <!-- Row 1: KPI Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Visitors -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">
+              <%= currentRange === 'all' ? 'Total Visitors' : 'Filtered Visitors' %>
+            </span>
+            <h3 class="fs-2 fw-bold text-dark mb-0"><%= metrics.totalVisitors %></h3>
           </div>
+          <div class="fs-1 text-primary bg-light px-3 py-2 rounded-3">👥</div>
         </div>
-        <div class="col-lg-6">
-          <div class="card h-100 border-0 bg-light">
-            <div class="card-body">
-              <h2 class="h5 fw-semibold mb-3">Most Used Tools</h2>
-              <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Tool</th>
-                      <th class="text-end">Usage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% mostUsedTools.forEach((tool) => { %>
-                      <tr>
-                        <td><%= tool.toolName %></td>
-                        <td class="text-end fw-semibold"><%= tool.totalUsage %></td>
-                      </tr>
-                    <% }) %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      </div>
+    </div>
+    
+    <!-- Active Users -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Active Workspaces</span>
+            <h3 class="fs-2 fw-bold text-success mb-0"><%= metrics.activeUsers %></h3>
+          </div>
+          <div class="fs-1 text-success bg-light-success px-3 py-2 rounded-3">⚡</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tool Usage -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">
+              <%= currentRange === 'all' ? 'Total Tool Usage' : 'Filtered Tool Runs' %>
+            </span>
+            <h3 class="fs-2 fw-bold text-info mb-0"><%= metrics.totalToolUsage %></h3>
+          </div>
+          <div class="fs-1 text-info bg-light px-3 py-2 rounded-3">🛠️</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Uptime -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Server Health</span>
+            <h3 class="fs-4 fw-bold text-dark mb-0"><%= metrics.serverHealth.status === 'healthy' ? '🟢 Healthy' : '🔴 Warning' %></h3>
+            <small class="text-secondary">Uptime: <%= Math.floor(metrics.serverHealth.uptime / 60) %> min</small>
+          </div>
+          <div class="fs-1 text-warning bg-light px-3 py-2 rounded-3">💻</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Traffic Chart -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0">Visitor Traffic Trend (Last <%= currentRange === 'today' ? '24 Hours' : currentRange === '7days' ? '7 Days' : '30 Days' %>)</h5>
+            <span class="badge bg-light text-primary px-3 py-2 rounded-pill">Real-Time Sync</span>
+          </div>
+          <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="trafficChart"></canvas>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Row 3: Demographics & Stats Breakdowns -->
+  <div class="row g-4 mb-4">
+    <!-- Top Countries -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">Top Countries</h5>
+          <% if (metrics.topCountries && metrics.topCountries.length > 0) { %>
+            <div class="d-flex flex-column gap-3">
+              <% metrics.topCountries.forEach((item) => { %>
+                <% const percentage = metrics.totalVisitors > 0 ? Math.round((item.count / metrics.totalVisitors) * 100) : 0; %>
+                <div>
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-semibold text-secondary"><%= item._id === 'unknown' ? '🌍 Unknown' : item._id %></span>
+                    <span class="small text-dark font-monospace fw-bold"><%= item.count %> visits (<%= percentage %>%)</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: <%= percentage %>%"></div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No traffic data recorded in this range.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Device Distribution -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">Device Breakdown</h5>
+          <% if (metrics.topDevices && metrics.topDevices.length > 0) { %>
+            <div class="d-flex flex-column gap-3">
+              <% metrics.topDevices.forEach((item) => { %>
+                <% const percentage = metrics.totalVisitors > 0 ? Math.round((item.count / metrics.totalVisitors) * 100) : 0; %>
+                <div>
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-semibold text-secondary">
+                      <%= item._id === 'Mobile' ? '📱 Mobile' : item._id === 'Tablet' ? '📟 Tablet' : '🖥️ Desktop' %>
+                    </span>
+                    <span class="small text-dark font-monospace fw-bold"><%= item.count %> visits (<%= percentage %>%)</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: <%= percentage %>%"></div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No devices data.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Browsers -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">Top Browsers</h5>
+          <% if (metrics.topBrowsers && metrics.topBrowsers.length > 0) { %>
+            <div class="d-flex flex-column gap-3">
+              <% metrics.topBrowsers.forEach((item) => { %>
+                <% const percentage = metrics.totalVisitors > 0 ? Math.round((item.count / metrics.totalVisitors) * 100) : 0; %>
+                <div>
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-semibold text-secondary">🌐 <%= item._id %></span>
+                    <span class="small text-dark font-monospace fw-bold"><%= item.count %> (<%= percentage %>%)</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: <%= percentage %>%"></div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No browser details.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Tools Usage Statistics -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">Tool Conversion Rankings</h5>
+          <% if (mostUsedTools && mostUsedTools.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" style="border:0;">Rank</th>
+                    <th scope="col" style="border:0;">Tool Name</th>
+                    <th scope="col" style="border:0;" class="text-end">Uses Count</th>
+                    <th scope="col" style="border:0;" class="text-end">Percentage of Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% mostUsedTools.forEach((tool, index) => { %>
+                    <% const percentage = metrics.totalToolUsage > 0 ? Math.round((tool.totalUsage / metrics.totalToolUsage) * 100) : 0; %>
+                    <tr>
+                      <td class="fw-bold text-secondary">#<%= index + 1 %></td>
+                      <td>
+                        <span class="fw-semibold text-dark"><%= tool.toolName %></span>
+                      </td>
+                      <td class="text-end fw-bold font-monospace"><%= tool.totalUsage %></td>
+                      <td class="text-end">
+                        <span class="badge bg-light text-primary font-monospace px-2 py-1"><%= percentage %>%</span>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No tool runs recorded in this range.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
+
+<!-- Import Chart.js from Whitelisted CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Safely inject backend daily traffic metrics data
+    const dailyData = <%- JSON.stringify(metrics.dailyVisits || []) %>;
+    
+    // Sort array in chronological order
+    dailyData.sort((a, b) => new Date(a._id) - new Date(b._id));
+    
+    const labels = dailyData.map(item => {
+      const d = new Date(item._id);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
+    
+    const counts = dailyData.map(item => item.count);
+
+    // Fallback display if no items
+    if (labels.length === 0) {
+      labels.push('No Data');
+      counts.push(0);
+    }
+
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    
+    // Create gradient fill effect
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)');
+    gradient.addColorStop(1, 'rgba(14, 165, 233, 0.02)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Visitor Counts',
+          data: counts,
+          borderColor: '#0ea5e9',
+          borderWidth: 3,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#0ea5e9',
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            padding: 12,
+            backgroundColor: '#0f172a',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              color: '#94a3b8'
+            },
+            grid: {
+              color: '#f1f5f9'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#94a3b8'
+            },
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  });
+</script>

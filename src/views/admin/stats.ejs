@@ -1,0 +1,378 @@
+<% layout('layouts/admin') -%>
+<section class="container-fluid px-0 py-3">
+  <!-- Title Header -->
+  <div class="mb-4">
+    <p class="text-uppercase small fw-semibold text-primary mb-1">Admin Dashboard</p>
+    <h1 class="h2 fw-bold text-dark mb-0">Detailed Statistics</h1>
+  </div>
+
+  <!-- Detailed Interactive Filter Panel Card -->
+  <div class="card border-0 shadow-sm rounded-3 bg-white mb-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold text-dark mb-3">🔍 Detailed Filter Engine</h5>
+      <form method="get" action="<%= adminAccessPath %>/stats" class="row g-3">
+        <!-- Start Date -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">Start Date</label>
+          <input type="date" name="startDate" value="<%= filters.startDate %>" class="form-control form-control-sm rounded-2">
+        </div>
+        
+        <!-- End Date -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">End Date</label>
+          <input type="date" name="endDate" value="<%= filters.endDate %>" class="form-control form-control-sm rounded-2">
+        </div>
+
+        <!-- Tool filter -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">Specific Tool</label>
+          <select name="tool" class="form-select form-select-sm rounded-2">
+            <option value="all" <%= filters.tool === 'all' ? 'selected' : '' %>>All Tools</option>
+            <% options.tools.forEach((t) => { %>
+              <option value="<%= t %>" <%= filters.tool === t ? 'selected' : '' %>><%= t %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Country filter -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">Country</label>
+          <select name="country" class="form-select form-select-sm rounded-2">
+            <option value="all" <%= filters.country === 'all' ? 'selected' : '' %>>All Countries</option>
+            <% options.countries.forEach((c) => { %>
+              <option value="<%= c %>" <%= filters.country === c ? 'selected' : '' %>><%= c === 'unknown' ? '🌍 Unknown' : c %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Device Filter -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">Device Type</label>
+          <select name="device" class="form-select form-select-sm rounded-2">
+            <option value="all" <%= filters.device === 'all' ? 'selected' : '' %>>All Devices</option>
+            <option value="Desktop" <%= filters.device === 'Desktop' ? 'selected' : '' %>>🖥️ Desktop</option>
+            <option value="Mobile" <%= filters.device === 'Mobile' ? 'selected' : '' %>>📱 Mobile</option>
+            <option value="Tablet" <%= filters.device === 'Tablet' ? 'selected' : '' %>>📟 Tablet</option>
+          </select>
+        </div>
+
+        <!-- Browser Filter -->
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <label class="form-label small fw-semibold text-secondary">Browser</label>
+          <select name="browser" class="form-select form-select-sm rounded-2">
+            <option value="all" <%= filters.browser === 'all' ? 'selected' : '' %>>All Browsers</option>
+            <% options.browsers.forEach((b) => { %>
+              <option value="<%= b %>" <%= filters.browser === b ? 'selected' : '' %>><%= b %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Submit actions -->
+        <div class="col-12 d-flex gap-2 justify-content-end mt-4">
+          <a href="<%= adminAccessPath %>/stats" class="btn btn-sm btn-outline-secondary px-3 py-2 rounded-2">
+            🧹 Clear Filters
+          </a>
+          <button type="submit" class="btn btn-sm btn-primary px-4 py-2 rounded-2">
+            🔍 Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Row 1: KPI metrics with filtered totals -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Filtered Visitors</span>
+            <h3 class="fs-1 fw-bold text-primary mb-0"><%= metrics.visitorsCount %></h3>
+            <small class="text-secondary">Matching selected constraints</small>
+          </div>
+          <div class="fs-1 text-primary bg-light px-3 py-2 rounded-3">👥</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Files Processed</span>
+            <h3 class="fs-1 fw-bold text-success mb-0"><%= metrics.filesCount %></h3>
+            <small class="text-secondary">In selected tool/range</small>
+          </div>
+          <div class="fs-1 text-success bg-light px-3 py-2 rounded-3">📁</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+          <div>
+            <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Cloudinary Storage</span>
+            <h3 class="fs-1 fw-bold text-info mb-0"><%= metrics.cloudinaryCount %></h3>
+            <small class="text-secondary">Remote cloud uploads</small>
+          </div>
+          <div class="fs-1 text-info bg-light px-3 py-2 rounded-3">☁️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtered Traffic Chart -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">Filtered Traffic Volume Trend</h5>
+          <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="filteredTrafficChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  <!-- Row 2: In-Depth Tool & Media Breakdowns -->
+  <div class="row g-4 mb-4">
+    <!-- Detailed Tool Conversions and Storage -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">🛠️ Detailed Tool Usage & Storage Breakdown</h5>
+          <% if (metrics.toolUsageStats && metrics.toolUsageStats.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Tool Name</th>
+                    <th class="text-end">Uploads Count</th>
+                    <th class="text-end">Total Size</th>
+                    <th class="text-end">Cloudinary Sync</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% metrics.toolUsageStats.forEach((t) => { %>
+                    <tr>
+                      <td class="fw-semibold text-dark"><%= t._id %></td>
+                      <td class="text-end fw-bold font-monospace text-secondary"><%= t.filesCount %></td>
+                      <td class="text-end font-monospace text-muted small"><%= (t.totalSize / (1024 * 1024)).toFixed(2) %> MB</td>
+                      <td class="text-end text-info font-monospace small"><%= t.cloudinaryCount %> files</td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No uploads done in this range.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Media File Types Breakdown -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold text-dark mb-3">📁 Media Extension & Format Breakdown</h5>
+          <% if (metrics.fileTypeStats && metrics.fileTypeStats.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Format</th>
+                    <th class="text-end">Files</th>
+                    <th class="text-end">Total Weight</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% metrics.fileTypeStats.forEach((ft) => { %>
+                    <tr>
+                      <td class="text-uppercase"><span class="badge bg-light text-dark px-2 py-1"><%= ft._id %></span></td>
+                      <td class="text-end fw-bold font-monospace text-secondary"><%= ft.filesCount %></td>
+                      <td class="text-end font-monospace text-muted small"><%= (ft.totalSize / (1024 * 1024)).toFixed(2) %> MB</td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No media distribution logs.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Logs Table Breakdowns -->
+  <div class="row g-4">
+    <!-- Log 1: Latest Visits -->
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0">Recent Visits Audit (Last 30)</h5>
+            <span class="badge bg-light text-primary py-1 px-2 rounded-pill">IP Masked</span>
+          </div>
+          <% if (metrics.latestVisits && metrics.latestVisits.length > 0) { %>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+              <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>IP Hash</th>
+                    <th>Country</th>
+                    <th>Browser/Device</th>
+                    <th class="text-end">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% metrics.latestVisits.forEach((v) => { %>
+                    <tr>
+                      <td class="font-monospace small text-secondary">
+                        <span class="badge bg-light text-dark font-monospace"><%= v.ipHash.slice(0, 10) %>...</span>
+                      </td>
+                      <td>
+                        <span class="small fw-semibold"><%= v.country === 'unknown' ? '🌍 Unknown' : v.country %></span>
+                      </td>
+                      <td class="small text-muted"><%= v.browser %> (<%= v.device %>)</td>
+                      <td class="text-end text-secondary small"><%= new Date(v.visitTime).toLocaleString(undefined, {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'}) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No visits match these filters.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log 2: Processed Files Log -->
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0">Processed Files Audit (Last 30)</h5>
+            <span class="badge bg-light text-success py-1 px-2 rounded-pill">Active & Expired</span>
+          </div>
+          <% if (metrics.latestFiles && metrics.latestFiles.length > 0) { %>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+              <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>Original Name</th>
+                    <th>Tool</th>
+                    <th>Size</th>
+                    <th class="text-end">Processed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% metrics.latestFiles.forEach((f) => { %>
+                    <tr>
+                      <td class="small fw-semibold text-truncate" style="max-width: 150px;" title="<%= f.originalName %>">
+                        <%= f.originalName %>
+                      </td>
+                      <td>
+                        <span class="badge bg-light text-primary small"><%= f.toolName %></span>
+                      </td>
+                      <td class="small font-monospace text-secondary text-nowrap">
+                        <%= (f.fileSize / (1024 * 1024)).toFixed(2) %> MB
+                      </td>
+                      <td class="text-end text-secondary small"><%= new Date(f.uploadTime).toLocaleString(undefined, {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'}) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-4 text-secondary">No files match these filters.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="filtered-traffic-store" data-traffic="<%= JSON.stringify(metrics.dailyTrafficStats || []) %>" style="display: none;"></div>
+
+<!-- Import Chart.js from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dataStore = document.getElementById('filtered-traffic-store');
+    const chartData = dataStore ? JSON.parse(dataStore.getAttribute('data-traffic')) : [];
+    
+    // Sort chronologically
+    chartData.sort((a, b) => new Date(a._id) - new Date(b._id));
+    
+    const labels = chartData.map(item => {
+      const d = new Date(item._id);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
+    
+    const counts = chartData.map(item => item.count);
+
+    if (labels.length === 0) {
+      labels.push('No Traffic matching filters');
+      counts.push(0);
+    }
+
+    const ctx = document.getElementById('filteredTrafficChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Visitor Counts',
+          data: counts,
+          borderColor: '#3b82f6',
+          borderWidth: 3,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#3b82f6',
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            padding: 10,
+            backgroundColor: '#0f172a'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              color: '#94a3b8'
+            },
+            grid: {
+              color: '#f1f5f9'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#94a3b8'
+            },
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  });
+</script>

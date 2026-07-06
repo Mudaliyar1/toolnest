@@ -41,41 +41,122 @@ async function handleLogin(req, res) {
 }
 
 async function renderDashboard(req, res) {
-  const analytics = await Analytics.findOne().lean();
-  const [totalVisitors, activeUsers, todayVisitors, monthlyVisitors, totalToolUsage, serverHealth, cloudinaryAssets, cloudinaryStorageRes] = await Promise.all([
-    Visitor.countDocuments(),
+  const range = req.query.range || 'all';
+  
+  // Calculate date boundaries
+  let dateFilter = {};
+  let days = 30; // default traffic history length
+  
+  if (range === 'today') {
+    dateFilter = { visitTime: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } };
+    days = 1;
+  } else if (range === '7days') {
+    dateFilter = { visitTime: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } };
+    days = 7;
+  } else if (range === '30days') {
+    dateFilter = { visitTime: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } };
+    days = 30;
+  }
+
+  const fileDateFilter = {};
+  if (range === 'today') {
+    fileDateFilter.uploadTime = { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) };
+  } else if (range === '7days') {
+    fileDateFilter.uploadTime = { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+  } else if (range === '30days') {
+    fileDateFilter.uploadTime = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+  }
+
+  const trafficDaysLimit = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [
+    totalVisitors,
+    activeUsers,
+    todayVisitors,
+    monthlyVisitors,
+    totalToolUsageRes,
+    serverHealth,
+    cloudinaryAssets,
+    cloudinaryStorageRes,
+    dailyVisits,
+    topCountries,
+    topBrowsers,
+    topDevices,
+    mostUsedTools
+  ] = await Promise.all([
+    Visitor.countDocuments(dateFilter),
     Workspace.countDocuments({ expiresAt: { $gt: new Date() } }),
     Visitor.countDocuments({ visitTime: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
     Visitor.countDocuments({ visitTime: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }),
-    ToolUsage.aggregate([{ $group: { _id: null, total: { $sum: '$totalUsage' } } }]),
+    range === 'all'
+      ? ToolUsage.aggregate([{ $group: { _id: null, total: { $sum: '$totalUsage' } } }])
+      : File.aggregate([{ $match: fileDateFilter }, { $group: { _id: null, total: { $sum: 1 } } }]),
     Promise.resolve({ status: 'healthy', uptime: process.uptime() }),
     File.countDocuments({ cloudinaryPublicId: { $ne: null } }),
     File.aggregate([
       { $match: { cloudinaryPublicId: { $ne: null } } },
       { $group: { _id: null, total: { $sum: '$fileSize' } } }
-    ])
+    ]),
+    Visitor.aggregate([
+      { $match: { visitTime: { $gte: trafficDaysLimit } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$visitTime" } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    Visitor.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: "$country", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]),
+    Visitor.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: "$browser", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]),
+    Visitor.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: "$device", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    range === 'all'
+      ? ToolUsage.find().sort({ totalUsage: -1 }).limit(10).lean()
+      : File.aggregate([
+          { $match: fileDateFilter },
+          { $group: { _id: "$toolName", totalUsage: { $sum: 1 } } },
+          { $sort: { totalUsage: -1 } },
+          { $limit: 10 }
+        ]).then(res => res.map(t => ({ toolName: t._id, totalUsage: t.totalUsage })))
   ]);
 
   const cloudinarySize = cloudinaryStorageRes[0] ? cloudinaryStorageRes[0].total : 0;
-  const mostUsedTools = await ToolUsage.find().sort({ totalUsage: -1 }).limit(5).lean();
-  const activeFiles = await File.countDocuments({ expireTime: { $gt: new Date() } });
-  const expiredFiles = await File.countDocuments({ expireTime: { $lte: new Date() } });
+  const totalToolUsage = totalToolUsageRes[0] ? totalToolUsageRes[0].total : 0;
 
   res.render('admin/dashboard', {
     title: 'Admin Dashboard',
     admin: req.admin,
+    currentRange: range,
     metrics: {
       totalVisitors,
-      totalSessions: analytics ? analytics.sessions : 0,
+      totalSessions: totalVisitors, // Fallback placeholder
       activeUsers,
       todayVisitors,
       monthlyVisitors,
-      totalToolUsage: totalToolUsage[0] ? totalToolUsage[0].total : 0,
+      totalToolUsage,
       serverHealth,
-      activeFiles,
-      expiredFiles,
+      activeFiles: await File.countDocuments({ expireTime: { $gt: new Date() } }),
+      expiredFiles: await File.countDocuments({ expireTime: { $lte: new Date() } }),
       cloudinaryAssets,
-      cloudinarySize
+      cloudinarySize,
+      dailyVisits,
+      topCountries,
+      topBrowsers,
+      topDevices
     },
     mostUsedTools,
     csrfToken: req.csrfToken()
@@ -229,6 +310,285 @@ async function clearPwaCache(req, res) {
   }
 }
 
+async function renderStats(req, res) {
+  const { tool, country, device, browser, startDate, endDate } = req.query;
+  
+  // 1. Build Visitor filter query
+  const visitorQuery = {};
+  let visitorFilterActive = false;
+
+  if (startDate || endDate) {
+    visitorFilterActive = true;
+    visitorQuery.visitTime = {};
+    if (startDate) {
+      visitorQuery.visitTime.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      visitorQuery.visitTime.$lte = end;
+    }
+  }
+  
+  if (country && country !== 'all') {
+    visitorFilterActive = true;
+    visitorQuery.country = country;
+  }
+  if (device && device !== 'all') {
+    visitorFilterActive = true;
+    visitorQuery.device = device;
+  }
+  if (browser && browser !== 'all') {
+    visitorFilterActive = true;
+    visitorQuery.browser = browser;
+  }
+
+  // 2. Fetch matched workspace IDs if visitor filter is active
+  let matchedWorkspaceIds = null;
+  if (visitorFilterActive) {
+    const visitors = await Visitor.find(visitorQuery, 'workspaceId').lean();
+    matchedWorkspaceIds = visitors.map(v => v.workspaceId).filter(Boolean);
+  }
+
+  // 3. Build File filter query
+  const fileQuery = {};
+  if (startDate || endDate) {
+    fileQuery.uploadTime = {};
+    if (startDate) {
+      fileQuery.uploadTime.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      fileQuery.uploadTime.$lte = end;
+    }
+  }
+  if (tool && tool !== 'all') {
+    fileQuery.toolName = tool;
+  }
+  if (matchedWorkspaceIds !== null) {
+    fileQuery.workspaceId = { $in: matchedWorkspaceIds };
+  }
+
+  // 4. Gather detailed metrics
+  const [
+    filteredVisitorsCount,
+    filteredFilesCount,
+    filteredCloudinaryCount,
+    allCountriesList,
+    allBrowsersList,
+    allToolsList,
+    latestVisits,
+    latestFiles,
+    dailyTrafficStats,
+    toolUsageAggregation,
+    fileTypeUsageAggregation
+  ] = await Promise.all([
+    Visitor.countDocuments(visitorQuery),
+    File.countDocuments(fileQuery),
+    File.countDocuments({ ...fileQuery, cloudinaryPublicId: { $ne: null } }),
+    Visitor.distinct('country'),
+    Visitor.distinct('browser'),
+    File.distinct('toolName'),
+    Visitor.find(visitorQuery).sort({ visitTime: -1 }).limit(30).lean(),
+    File.find(fileQuery).sort({ uploadTime: -1 }).limit(30).lean(),
+    Visitor.aggregate([
+      { $match: visitorQuery },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$visitTime" } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    File.aggregate([
+      { $match: fileQuery },
+      {
+        $group: {
+          _id: "$toolName",
+          filesCount: { $sum: 1 },
+          totalSize: { $sum: "$fileSize" },
+          cloudinaryCount: {
+            $sum: { $cond: [{ $ne: ["$cloudinaryPublicId", null] }, 1, 0] }
+          }
+        }
+      },
+      { $sort: { filesCount: -1 } }
+    ]),
+    File.aggregate([
+      { $match: fileQuery },
+      {
+        $group: {
+          _id: "$fileType",
+          filesCount: { $sum: 1 },
+          totalSize: { $sum: "$fileSize" }
+        }
+      },
+      { $sort: { filesCount: -1 } }
+    ])
+  ]);
+
+  res.render('admin/stats', {
+    title: 'Detailed Statistics | RaiseTool',
+    admin: req.admin,
+    csrfToken: req.csrfToken(),
+    filters: {
+      tool: tool || 'all',
+      country: country || 'all',
+      device: device || 'all',
+      browser: browser || 'all',
+      startDate: startDate || '',
+      endDate: endDate || ''
+    },
+    options: {
+      countries: allCountriesList.filter(Boolean),
+      browsers: allBrowsersList.filter(Boolean),
+      tools: allToolsList.filter(Boolean)
+    },
+    metrics: {
+      visitorsCount: filteredVisitorsCount,
+      filesCount: filteredFilesCount,
+      cloudinaryCount: filteredCloudinaryCount,
+      latestVisits,
+      latestFiles,
+      dailyTrafficStats,
+      toolUsageStats: toolUsageAggregation,
+      fileTypeStats: fileTypeUsageAggregation
+    }
+  });
+}
+
+async function renderPerformance(req, res) {
+  const os = require('os');
+
+  function formatUptime(seconds) {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${d}d ${h}h ${m}m ${s}s`;
+  }
+
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  const memoryPercentage = ((usedMem / totalMem) * 100).toFixed(1);
+
+  const cpus = os.cpus();
+  const loadAvg = os.loadavg();
+  const cpuLoadPercentage = ((loadAvg[0] / cpus.length) * 100).toFixed(1);
+
+  const processMemory = process.memoryUsage();
+
+  const metrics = {
+    osPlatform: os.platform(),
+    osRelease: os.release(),
+    osArch: os.arch(),
+    cpuModel: cpus[0] ? cpus[0].model : 'Unknown CPU',
+    cpuCores: cpus.length,
+    cpuLoad1m: loadAvg[0].toFixed(2),
+    cpuLoad5m: loadAvg[1].toFixed(2),
+    cpuLoad15m: loadAvg[2].toFixed(2),
+    cpuLoadPercent: Math.min(100, parseFloat(cpuLoadPercentage)),
+    memoryTotal: (totalMem / (1024 * 1024 * 1024)).toFixed(2),
+    memoryUsed: (usedMem / (1024 * 1024 * 1024)).toFixed(2),
+    memoryFree: (freeMem / (1024 * 1024 * 1024)).toFixed(2),
+    memoryPercent: memoryPercentage,
+    nodeRss: (processMemory.rss / (1024 * 1024)).toFixed(2),
+    nodeHeapTotal: (processMemory.heapTotal / (1024 * 1024)).toFixed(2),
+    nodeHeapUsed: (processMemory.heapUsed / (1024 * 1024)).toFixed(2),
+    nodeExternal: (processMemory.external / (1024 * 1024)).toFixed(2),
+    uptimeSystem: formatUptime(os.uptime()),
+    uptimeProcess: formatUptime(process.uptime())
+  };
+
+  // Query live metrics, database collection documents, and activity feed
+  const mongoose = require('mongoose');
+  const SystemSettings = require('../models/SystemSettings');
+  const { httpTracker } = require('../services/analyticsService');
+
+  const [
+    recentUploads,
+    processedToday,
+    activeWorkspacesToday,
+    allTimeProcessed,
+    workspaceCount,
+    fileCount,
+    toolUsageCount,
+    visitorCount,
+    adminCount,
+    analyticsCount,
+    settings
+  ] = await Promise.all([
+    File.find({}).sort({ uploadTime: -1 }).limit(15).lean(),
+    File.countDocuments({ uploadTime: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+    Workspace.countDocuments({ lastActivity: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+    File.countDocuments({}),
+    Workspace.countDocuments({}),
+    File.countDocuments({}),
+    ToolUsage.countDocuments({}),
+    Visitor.countDocuments({}),
+    Admin.countDocuments({}),
+    Analytics.countDocuments({}),
+    SystemSettings.findOne({}).lean()
+  ]);
+
+  const activeSettings = settings || { storageStrategy: 'server', cloudinaryEnabled: false, cloudinaryProcessedJobs: 0 };
+
+  let dbStatus = 'Unknown';
+  if (mongoose.connection.readyState === 0) dbStatus = 'Disconnected';
+  else if (mongoose.connection.readyState === 1) dbStatus = 'Connected';
+  else if (mongoose.connection.readyState === 2) dbStatus = 'Connecting';
+  else if (mongoose.connection.readyState === 3) dbStatus = 'Disconnecting';
+
+  const totalRequests = httpTracker.totalRequests;
+  const activeRequests = httpTracker.activeRequests;
+  const avgLatencyMs = totalRequests > 0 ? (httpTracker.totalLatencyMs / totalRequests).toFixed(1) : '0.0';
+
+  const appDiagnostics = {
+    dbStatus,
+    dbName: mongoose.connection.name || 'unknown',
+    dbHost: `${mongoose.connection.host || 'unknown'}:${mongoose.connection.port || ''}`,
+    counts: {
+      workspace: workspaceCount,
+      file: fileCount,
+      toolUsage: toolUsageCount,
+      visitor: visitorCount,
+      admin: adminCount,
+      analytics: analyticsCount
+    },
+    http: {
+      totalRequests,
+      activeRequests,
+      avgLatencyMs,
+      statusCodes: httpTracker.statusCodes
+    },
+    settings: {
+      storageStrategy: activeSettings.storageStrategy || 'server',
+      cloudinaryEnabled: activeSettings.cloudinaryEnabled !== false,
+      cloudinaryProcessedJobs: activeSettings.cloudinaryProcessedJobs || 0
+    },
+    node: {
+      activeHandles: process._getActiveHandles ? process._getActiveHandles().length : 'N/A',
+      activeRequests: process._getActiveRequests ? process._getActiveRequests().length : 'N/A',
+      loadedModules: Object.keys(require.cache).length
+    }
+  };
+
+  res.render('admin/performance', {
+    title: 'Server Performance Monitor | RaiseTool',
+    admin: req.admin,
+    csrfToken: req.csrfToken(),
+    metrics,
+    recentUploads,
+    processedToday,
+    activeWorkspacesToday,
+    allTimeProcessed,
+    appDiagnostics
+  });
+}
+
 module.exports = {
   handleLogin,
   handleLogout,
@@ -238,5 +598,7 @@ module.exports = {
   updateProcessingSettings,
   purgeFiles,
   purgeAllFiles,
-  clearPwaCache
+  clearPwaCache,
+  renderStats,
+  renderPerformance
 };

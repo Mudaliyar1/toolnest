@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= typeof title !== 'undefined' && title ? title : 'Admin Panel | RaiseTool' %></title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --sidebar-bg: #0f172a;
+      --sidebar-color: #94a3b8;
+      --sidebar-active-bg: #1e293b;
+      --sidebar-active-color: #f8fafc;
+    }
+    body {
+      background-color: #f8fafc;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+    }
+    .admin-wrapper {
+      display: flex;
+      width: 100%;
+      align-items: stretch;
+    }
+    .admin-sidebar {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      color: var(--sidebar-color);
+      min-height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1e293b;
+    }
+    .admin-sidebar .sidebar-header {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .admin-sidebar .nav-link {
+      color: var(--sidebar-color);
+      padding: 0.8rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .admin-sidebar .nav-link:hover {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-color);
+    }
+    .admin-sidebar .nav-link.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-color);
+      border-left-color: #0ea5e9;
+    }
+    .admin-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      padding: 2.5rem;
+      min-height: 100vh;
+      transition: all 0.3s ease;
+    }
+    .admin-mobile-header {
+      display: none;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 1rem 1.5rem;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+    
+    @media (max-width: 991.98px) {
+      .admin-sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+      }
+      .admin-sidebar.show {
+        margin-left: 0;
+      }
+      .admin-content {
+        margin-left: 0;
+        padding: 1.25rem;
+      }
+      .admin-mobile-header {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-mobile-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="fs-4">⚡</span>
+      <span class="fw-bold text-dark">RaiseTool Admin</span>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" id="sidebar-toggle-btn">
+      ☰ Menu
+    </button>
+  </div>
+
+  <div class="admin-wrapper">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-header">
+        <span class="fs-3">⚡</span>
+        <div>
+          <div class="fw-bold text-white lh-sm">RaiseTool</div>
+          <small class="text-secondary">Control Center</small>
+        </div>
+      </div>
+      
+      <div class="flex-grow-1 py-3">
+        <nav class="nav flex-column">
+          <a href="<%= adminAccessPath %>/dashboard" class="nav-link <%= currentPath === adminAccessPath + '/dashboard' ? 'active' : '' %>">
+            📊 System Overview
+          </a>
+          <a href="<%= adminAccessPath %>/stats" class="nav-link <%= currentPath === adminAccessPath + '/stats' ? 'active' : '' %>">
+            📈 Detailed Statistics
+          </a>
+          <a href="<%= adminAccessPath %>/performance" class="nav-link <%= currentPath === adminAccessPath + '/performance' ? 'active' : '' %>">
+            💻 Server Performance
+          </a>
+          <a href="<%= adminAccessPath %>/processing" class="nav-link <%= currentPath === adminAccessPath + '/processing' ? 'active' : '' %>">
+            ⚙️ Processing & PWA
+          </a>
+        </nav>
+      </div>
+
+      <div class="p-3 border-top border-secondary">
+        <div class="d-flex flex-column gap-2">
+          <a href="/" class="btn btn-outline-light btn-sm w-100 py-2">
+            🏠 Back to Site
+          </a>
+          <form method="post" action="<%= adminAccessPath %>/logout" class="w-100">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-danger btn-sm w-100 py-2">
+              🚪 Sign Out
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+      <%- body %>
+    </main>
+  </div>
+
+  <script src="/vendor/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggleBtn = document.getElementById('sidebar-toggle-btn');
+      const sidebar = document.getElementById('admin-sidebar');
+      if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sidebar.classList.toggle('show');
+        });
+        document.body.addEventListener('click', (e) => {
+          if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
+            sidebar.classList.remove('show');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

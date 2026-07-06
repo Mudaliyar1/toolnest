@@ -8,6 +8,8 @@ const router = express.Router();
 router.get('/', asyncHandler(adminController.renderLogin));
 router.post('/', asyncHandler(adminController.handleLogin));
 router.get('/dashboard', adminAuth, asyncHandler(adminController.renderDashboard));
+router.get('/stats', adminAuth, asyncHandler(adminController.renderStats));
+router.get('/performance', adminAuth, asyncHandler(adminController.renderPerformance));
 router.post('/logout', adminAuth, asyncHandler(adminController.handleLogout));
 router.get('/processing', adminAuth, asyncHandler(adminController.renderProcessingManagement));
 router.post('/processing', adminAuth, asyncHandler(adminController.updateProcessingSettings));
