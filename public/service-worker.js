@@ -50,9 +50,19 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  const isDynamicRoute = url.pathname.startsWith('/workspace') || 
+                         url.pathname.startsWith('/admin');
 
   // Check if it is a navigation request (HTML pages)
   if (event.request.mode === 'navigate') {
+    if (isDynamicRoute) {
+      // Always fetch dynamic pages from network, fall back to offline page if offline
+      event.respondWith(
+        fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+      );
+      return;
+    }
+
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -74,6 +84,12 @@ self.addEventListener('fetch', (event) => {
           });
         })
     );
+    return;
+  }
+
+  // Bypass cache completely for dynamic workspace/admin API/fetch requests
+  if (isDynamicRoute) {
+    event.respondWith(fetch(event.request));
     return;
   }
 

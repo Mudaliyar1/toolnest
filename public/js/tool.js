@@ -1180,7 +1180,7 @@
   let remainingSeconds = 30;
 
   function initProcessingModal() {
-    if (!processingModal && window.bootstrap && bootstrap.Modal) {
+    if (window.bootstrap && bootstrap.Modal) {
       const modalEl = document.getElementById('browserProcessingModal');
       if (modalEl) {
         processingModal = new bootstrap.Modal(modalEl, {
