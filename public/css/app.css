@@ -387,3 +387,94 @@ pre {
     padding-bottom: 100px !important; /* Space so bottom content is not overlayed by the floating nav */
   }
 }
+
+/* Custom PWA Splash Screen */
+#pwa-splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #0f172a; /* Slate 900 for premium dark start */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
+  visibility: visible;
+  opacity: 1;
+}
+
+#pwa-splash-screen.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.splash-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.splash-logo {
+  font-size: 5rem;
+  line-height: 1;
+  animation: splash-pulse-scale 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+  background: linear-gradient(135deg, #0d9488, #0284c7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(2, 132, 199, 0.4));
+}
+
+.splash-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: splash-fade-in-up 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards 0.2s;
+}
+
+.splash-spinner {
+  width: 36px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 12px;
+}
+
+.splash-spinner::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #0d9488, #0284c7);
+  border-radius: 10px;
+  animation: splash-loading 1.2s infinite linear;
+}
+
+@keyframes splash-pulse-scale {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+@keyframes splash-fade-in-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-loading {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}

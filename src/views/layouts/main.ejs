@@ -21,6 +21,14 @@
 </head>
 
 <body class="d-flex flex-column min-vh-100" data-pwa-cache="<%= (typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaOfflineCache !== false) %>">
+  <!-- YouTube-Style PWA Splash Screen -->
+  <div id="pwa-splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">⚡</div>
+      <div class="splash-brand">RaiseTool</div>
+      <div class="splash-spinner"></div>
+    </div>
+  </div>
   <%- include('../partials/header') %>
     <main class="flex-grow-1">
       <%- body %>
@@ -55,6 +63,21 @@
             return window.matchMedia('(display-mode: standalone)').matches || 
                    window.navigator.standalone === true || 
                    document.referrer.includes('android-app://');
+          }
+
+          // YouTube-Style PWA Splash Screen Controller
+          if (isRunningAsPWA() && !sessionStorage.getItem('pwa-splash-shown')) {
+            setTimeout(() => {
+              const splash = document.getElementById('pwa-splash-screen');
+              if (splash) {
+                splash.classList.add('fade-out');
+                sessionStorage.setItem('pwa-splash-shown', 'true');
+                setTimeout(() => splash.remove(), 600);
+              }
+            }, 1600);
+          } else {
+            const splash = document.getElementById('pwa-splash-screen');
+            if (splash) splash.remove();
           }
 
           if (isRunningAsPWA()) {
