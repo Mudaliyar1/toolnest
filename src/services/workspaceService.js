@@ -148,16 +148,10 @@ async function ensureWorkspaceContext(req, res, next) {
       }
     } else {
       if (dbConnected) {
-        const { getSettings, durationToMs } = require('./settingsService');
-        const settings = await getSettings();
-        const fallbackMs = durationToMs(settings.fallbackRetentionValue || 10, settings.fallbackRetentionUnit || 'minutes');
-        const newExpiry = new Date(Date.now() + fallbackMs);
-
         await Workspace.updateOne(
           { workspaceId: workspaceData.workspace.workspaceId },
-          { $set: { lastActivity: new Date(), expiresAt: newExpiry } }
+          { $set: { lastActivity: new Date() } }
         );
-        workspaceData.workspace.expiresAt = newExpiry;
       }
       await persistWorkspaceCookies(res, workspaceData.workspace.workspaceId, workspaceData.token);
       req.workspaceCreated = false;
