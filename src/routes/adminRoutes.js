@@ -13,5 +13,6 @@ router.get('/processing', adminAuth, asyncHandler(adminController.renderProcessi
 router.post('/processing', adminAuth, asyncHandler(adminController.updateProcessingSettings));
 router.post('/processing/purge', adminAuth, asyncHandler(adminController.purgeFiles));
 router.post('/processing/purge-all', adminAuth, asyncHandler(adminController.purgeAllFiles));
+router.post('/processing/clear-pwa-cache', adminAuth, asyncHandler(adminController.clearPwaCache));
 
 module.exports = router;

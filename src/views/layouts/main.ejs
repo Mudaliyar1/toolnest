@@ -13,13 +13,14 @@
           </title>
           <meta name="description"
             content="RaiseTool is a clean, production-oriented utility platform for document, media, developer, student, business, and everyday tools.">
-          <meta name="theme-color" content="#2563eb">
+          <meta name="theme-color" content="#0284c7">
+          <link rel="manifest" href="/manifest.json">
           <link rel="canonical" href="<%= canonicalUrl %>">
           <link rel="stylesheet" href="/vendor/bootstrap.min.css">
           <link rel="stylesheet" href="/css/app.css">
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100" data-pwa-cache="<%= systemSettings.pwaOfflineCache !== false %>">
   <%- include('../partials/header') %>
     <main class="flex-grow-1">
       <%- body %>
@@ -55,6 +56,65 @@
             const itemPath = item.getAttribute('data-path');
             if (currentPath === itemPath || (itemPath !== '/' && currentPath.startsWith(itemPath))) {
               item.classList.add('active');
+            }
+          });
+
+          // Service Worker Registration
+          const pwaCacheEnabled = document.body.getAttribute('data-pwa-cache') !== 'false';
+          if ('serviceWorker' in navigator && pwaCacheEnabled) {
+            const pwaVersion = '<%= systemSettings.pwaCacheVersion || 1 %>';
+            
+            // Reload page on controller change (forces fresh UI when SW updates)
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+              }
+            });
+
+            navigator.serviceWorker.register('/service-worker.js?v=' + pwaVersion)
+              .then((reg) => {
+                console.log('[PWA] Service Worker registered scope:', reg.scope);
+                // Check if update is waiting
+                if (reg.waiting) {
+                  console.log('[PWA] Service Worker update is waiting.');
+                  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+              })
+              .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
+          }
+
+          // Custom Install Prompt logic
+          let deferredPrompt;
+          const installBtn = document.getElementById('pwa-install-btn');
+
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) {
+              installBtn.classList.remove('d-none');
+              installBtn.style.display = 'inline-flex';
+            }
+          });
+
+          if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+              if (!deferredPrompt) return;
+              deferredPrompt.prompt();
+              const { outcome } = await deferredPrompt.userChoice;
+              console.log('[PWA] Install choice outcome:', outcome);
+              deferredPrompt = null;
+              installBtn.classList.add('d-none');
+              installBtn.style.display = 'none';
+            });
+          }
+
+          window.addEventListener('appinstalled', () => {
+            console.log('[PWA] RaiseTool app installed successfully.');
+            if (installBtn) {
+              installBtn.classList.add('d-none');
+              installBtn.style.display = 'none';
             }
           });
         });

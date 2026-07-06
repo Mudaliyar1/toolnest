@@ -34,13 +34,13 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
       workerSrc: ["'self'", "blob:"],
       imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       mediaSrc: ["'self'", 'blob:'],
-      fontSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      fontSrc: ["'self'", 'data:', "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       frameAncestors: ["'none'"]
     }
   },

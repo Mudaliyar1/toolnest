@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline Mode | RaiseTool</title>
+  <link rel="stylesheet" href="/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #f1f5f9;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(2, 132, 199, 0.05) 0px, transparent 50%);
+      padding: 20px;
+    }
+    .offline-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.6) !important;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.05);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      padding: 40px 30px;
+    }
+    .offline-icon {
+      font-size: 4rem;
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+      display: inline-block;
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    @keyframes pulse-glow {
+      0% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.9; }
+    }
+    .tool-link {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 12px;
+      text-decoration: none;
+      color: #1e293b;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+    .tool-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(13, 148, 136, 0.08);
+      border-color: rgba(13, 148, 136, 0.3);
+      color: #0284c7;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+      text-align: left;
+    }
+    @media (max-width: 576px) {
+      .tool-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="offline-icon">📡</div>
+    <h1 class="h3 fw-bold text-dark mb-2">You are currently offline</h1>
+    <p class="text-secondary mb-4">It looks like your internet connection is down. However, RaiseTool is built to run offline! You can still access these tools directly in your browser:</p>
+    
+    <div class="tool-grid">
+      <a href="/tools/json-formatter" class="tool-link">
+        <span class="me-2">📝</span> JSON Formatter
+      </a>
+      <a href="/tools/json-validator" class="tool-link">
+        <span class="me-2">✔</span> JSON Validator
+      </a>
+      <a href="/tools/base64-encoder" class="tool-link">
+        <span class="me-2">🔒</span> Base64 Encoder
+      </a>
+      <a href="/tools/jwt-decoder" class="tool-link">
+        <span class="me-2">🔑</span> JWT Decoder
+      </a>
+      <a href="/tools/qr-generator" class="tool-link">
+        <span class="me-2">🔳</span> QR Code Generator
+      </a>
+      <a href="/tools/word-counter" class="tool-link">
+        <span class="me-2">📊</span> Word & Char Counter
+      </a>
+      <a href="/tools/gst-calculator" class="tool-link">
+        <span class="me-2">💰</span> GST Calculator
+      </a>
+      <a href="/tools/emi-calculator" class="tool-link">
+        <span class="me-2">🏦</span> EMI Loan Calculator
+      </a>
+      <a href="/tools/rotate-pdf" class="tool-link">
+        <span class="me-2">📄</span> Rotate PDF
+      </a>
+      <a href="/tools/password-generator" class="tool-link">
+        <span class="me-2">🎲</span> Password Generator
+      </a>
+    </div>
+
+    <hr class="my-4" style="opacity: 0.1;">
+
+    <button onclick="window.location.reload();" class="btn btn-primary px-4 py-2 w-100">
+      🔄 Retry Connection
+    </button>
+  </div>
+</body>
+</html>

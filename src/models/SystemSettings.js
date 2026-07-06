@@ -50,6 +50,10 @@ const systemSettingsSchema = new mongoose.Schema(
         uploadLimitMb: { type: Number }
       }
     ],
+    pwaOfflineCache: { type: Boolean, default: true },
+    pwaCacheVersion: { type: Number, default: 1 },
+    pwaBackgroundSync: { type: Boolean, default: true },
+    pwaIndexedDbUsage: { type: Boolean, default: true },
     analytics: {
       browserProcessedJobs: { type: Number, default: 0 },
       browserSuccessCount: { type: Number, default: 0 },

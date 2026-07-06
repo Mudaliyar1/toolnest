@@ -25,6 +25,45 @@
     const urlParts = window.location.pathname.split('/');
     const slug = slugFromAction ? slugFromAction[1] : urlParts[urlParts.length - 1];
 
+    // IndexedDB Management for PWA History
+    let db = null;
+    if (config.pwaIndexedDbUsage !== false && typeof indexedDB !== 'undefined') {
+      const dbRequest = indexedDB.open('raisetool-db', 1);
+
+      dbRequest.onupgradeneeded = (e) => {
+        const activeDb = e.target.result;
+        if (!activeDb.objectStoreNames.contains('history')) {
+          activeDb.createObjectStore('history', { keyPath: 'id', autoIncrement: true });
+        }
+      };
+
+      dbRequest.onsuccess = (e) => {
+        db = e.target.result;
+      };
+
+      dbRequest.onerror = (e) => {
+        console.error('Failed to open IndexedDB:', e.target.error);
+      };
+    }
+
+    window.logToolHistory = function(toolSlug, title, status, details) {
+      if (!db || config.pwaIndexedDbUsage === false) return;
+      try {
+        const transaction = db.transaction(['history'], 'readwrite');
+        const store = transaction.objectStore('history');
+        const entry = {
+          toolSlug: toolSlug || slug,
+          title: title || 'Output',
+          status: status || 'success',
+          details: details || 'Processed',
+          timestamp: new Date().toISOString()
+        };
+        store.add(entry);
+      } catch (err) {
+        console.error('Failed to write to IndexedDB:', err);
+      }
+    };
+
     if (config.method === 'disabled' && submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing Disabled';
@@ -428,12 +467,22 @@
         };
       }
       container.scrollIntoView({ behavior: 'smooth' });
+
+      // Log to PWA History
+      if (typeof window.logToolHistory === 'function') {
+        window.logToolHistory(slug, title, 'success', 'Text results generated');
+      }
     }
 
     async function showBrowserFileResult(fileName, objectUrl, fileSize = 0, append = false) {
       const container = document.getElementById('browser-result-container');
       const textWrapper = document.getElementById('browser-result-text-wrapper');
       const fileList = document.getElementById('browser-result-file-list');
+
+      // Log to PWA History
+      if (typeof window.logToolHistory === 'function') {
+        window.logToolHistory(slug, `File: ${fileName}`, 'success', `File size: ${formatBytes(fileSize)}`);
+      }
 
       // Random unique ID to target status element for this file
       const statusId = 'status_' + Math.random().toString(36).substring(2, 9);
@@ -1042,6 +1091,68 @@
           else if (from === 'f' && to === 'c') result = (val - 32) * 5 / 9;
         }
         showBrowserTextResult('Conversion Output', `${val} ${from} = ${result.toFixed(4)} ${to}`);
+      }
+      else if (slug === 'reorder-pages') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const pagesStr = formData.get('pages') || '';
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const totalPages = doc.getPageCount();
+
+        const pageIndices = [];
+        if (pagesStr.includes('-')) {
+          const parts = pagesStr.split('-');
+          const start = parseInt(parts[0]) - 1;
+          const end = parseInt(parts[1]) - 1;
+          for (let i = start; i <= end; i++) {
+            if (i >= 0 && i < totalPages) pageIndices.push(i);
+          }
+        } else {
+          pagesStr.split(',').forEach(p => {
+            const idx = parseInt(p.trim()) - 1;
+            if (idx >= 0 && idx < totalPages) pageIndices.push(idx);
+          });
+        }
+
+        if (pageIndices.length === 0) throw new Error('No valid page numbers specified.');
+
+        const newDoc = await PDFLib.PDFDocument.create();
+        const copiedPages = await newDoc.copyPages(doc, pageIndices);
+        copiedPages.forEach(p => newDoc.addPage(p));
+        const pdfBytes = await newDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`reordered_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'text-cleaner') {
+        const text = formData.get('text') || '';
+        let cleaned = text.replace(/<\/?[^>]+(>|$)/g, ""); // Strip HTML
+        cleaned = cleaned.replace(/[ \t]+/g, " "); // Double spaces
+        cleaned = cleaned.replace(/\r?\n\s*\r?\n/g, "\n"); // Double lines
+        cleaned = cleaned.split('\n').map(line => line.trim()).join('\n');
+        showBrowserTextResult('Cleaned Text', cleaned.trim());
+      }
+      else if (slug === 'duplicate-line-remover') {
+        const text = formData.get('text') || '';
+        const lines = text.split(/\r?\n/);
+        const unique = Array.from(new Set(lines));
+        showBrowserTextResult('Deduplicated Lines', unique.join('\n'));
+      }
+      else if (slug === 'gst-calculator') {
+        const val = parseFloat(formData.get('value') || 0);
+        const rate = parseFloat(formData.get('length') || 18);
+        const gst = val * (rate / 100);
+        const total = val + gst;
+        showBrowserTextResult('GST Calculations', `GST Amount: ${gst.toFixed(2)}\nTotal (Including Tax): ${total.toFixed(2)}`);
+      }
+      else if (slug === 'emi-calculator' || slug === 'loan-calculator') {
+        const principal = parseFloat(formData.get('value') || 0);
+        const annualRate = parseFloat(formData.get('length') || 10);
+        const months = parseFloat(formData.get('pages') || 12);
+        const monthlyRate = annualRate / 12 / 100;
+        const emi = monthlyRate ? (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1) : principal / months;
+        const totalRepayment = emi * months;
+        const totalInterest = totalRepayment - principal;
+        showBrowserTextResult('Loan Installments (EMI) Summary', `Monthly EMI: ${emi.toFixed(2)}\nTotal Interest Payable: ${totalInterest.toFixed(2)}\nTotal Repayment: ${totalRepayment.toFixed(2)}`);
       }
       else if (['video', 'audio'].includes(getToolCategory(slug))) {
         await runFFmpegBrowserProcessing(slug, formData, files);

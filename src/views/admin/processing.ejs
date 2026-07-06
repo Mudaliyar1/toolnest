@@ -14,6 +14,10 @@
           <h1 class="display-6 fw-bold mb-0">Processing & Storage Control Center</h1>
         </div>
         <div class="d-flex gap-2">
+          <form method="post" action="<%= adminAccessPath %>/processing/clear-pwa-cache" class="d-inline" onsubmit="return confirm('Force all user browsers to clear service worker caches and fetch fresh UI assets?');">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline-primary">⚡ Clear User Caches (v<%= systemSettings.pwaCacheVersion || 1 %>)</button>
+          </form>
           <form method="post" action="<%= adminAccessPath %>/processing/purge" class="d-inline">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-outline-warning">Purge Expired Files</button>
@@ -294,6 +298,45 @@
             </div>
           </div>
 
+          <!-- PWA & Offline Control Center -->
+          <div class="col-12">
+            <div class="card shadow-sm border-0">
+              <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-3 text-dark">📱 Progressive Web App & Offline Controls</h3>
+                <p class="small text-secondary mb-4">Manage service worker parameters, offline assets cache schemas, background data sync routines, and local IndexedDB file storage allocations.</p>
+                <div class="row g-4">
+                  <div class="col-md-3 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="pwaOfflineCache" id="toggle-pwa-cache" <%= systemSettings.pwaOfflineCache !== false ? 'checked' : '' %>>
+                      <label class="form-check-label fw-bold text-dark" for="toggle-pwa-cache">Offline Caching Strategy</label>
+                    </div>
+                    <span class="d-block small text-secondary">Store visited paths and tools locally.</span>
+                  </div>
+                  <div class="col-md-3 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="pwaBackgroundSync" id="toggle-pwa-sync" <%= systemSettings.pwaBackgroundSync !== false ? 'checked' : '' %>>
+                      <label class="form-check-label fw-bold text-dark" for="toggle-pwa-sync">Background Data Sync</label>
+                    </div>
+                    <span class="d-block small text-secondary">Automatically sync analytics and cache state when returning online.</span>
+                  </div>
+                  <div class="col-md-3 col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="pwaIndexedDbUsage" id="toggle-pwa-idb" <%= systemSettings.pwaIndexedDbUsage !== false ? 'checked' : '' %>>
+                      <label class="form-check-label fw-bold text-dark" for="toggle-pwa-idb">IndexedDB Storage</label>
+                    </div>
+                    <span class="d-block small text-secondary">Enable client-side sandbox history tracking.</span>
+                  </div>
+                  <div class="col-md-3 col-sm-6">
+                    <div class="d-grid gap-2">
+                      <button type="button" id="btn-force-sw-update" class="btn btn-outline-primary btn-sm">Force Service Worker Update</button>
+                      <button type="button" id="btn-clear-pwa-cache" class="btn btn-outline-danger btn-sm">Flush Offline Assets Cache</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Tool Level Overrides Table -->
           <div class="col-12">
             <div class="card shadow-sm border-0">
@@ -361,3 +404,53 @@
     </div>
   </div>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const btnClearCache = document.getElementById('btn-clear-pwa-cache');
+    const btnForceSW = document.getElementById('btn-force-sw-update');
+
+    if (btnClearCache) {
+      btnClearCache.addEventListener('click', async () => {
+        if ('caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            alert('Success: All offline PWA caches have been successfully flushed!');
+          } catch (err) {
+            alert('Failed to clear cache: ' + err.message);
+          }
+        } else {
+          alert('Error: Cache API is not supported in this browser.');
+        }
+      });
+    }
+
+    if (btnForceSW) {
+      btnForceSW.addEventListener('click', async () => {
+        if ('serviceWorker' in navigator) {
+          try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            if (regs.length === 0) {
+              alert('Notice: No active service workers found. They will be registered on next visit.');
+              return;
+            }
+            for (let reg of regs) {
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                alert('Success: Forced service worker update completed.');
+              } else {
+                await reg.update();
+                alert('Success: Service worker update check triggered successfully.');
+              }
+            }
+          } catch (err) {
+            alert('Failed to update service worker: ' + err.message);
+          }
+        } else {
+          alert('Error: Service Workers are not supported in this browser.');
+        }
+      });
+    }
+  });
+</script>

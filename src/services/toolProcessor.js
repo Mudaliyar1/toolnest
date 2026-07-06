@@ -231,6 +231,18 @@ async function executeTextTool(slug, body) {
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
       return { kind: 'text', title: 'Word Count', content: JSON.stringify({ characters: text.length, words, lines: text.split(/\r?\n/).length }, null, 2) };
     }
+    case 'text-cleaner': {
+      let cleaned = text.replace(/<\/?[^>]+(>|$)/g, ""); // Strip HTML tags
+      cleaned = cleaned.replace(/[ \t]+/g, " "); // Double spaces
+      cleaned = cleaned.replace(/\r?\n\s*\r?\n/g, "\n"); // Empty lines
+      cleaned = cleaned.split('\n').map(line => line.trim()).join('\n');
+      return { kind: 'text', title: 'Cleaned Text', content: cleaned.trim() };
+    }
+    case 'duplicate-line-remover': {
+      const lines = text.split(/\r?\n/);
+      const uniqueLines = Array.from(new Set(lines));
+      return { kind: 'text', title: 'Deduplicated Text', content: uniqueLines.join('\n') };
+    }
     case 'password-generator':
       return { kind: 'text', title: 'Generated Password', content: generatePassword(body.length) };
     case 'password-strength-checker':
@@ -853,9 +865,10 @@ async function processPdfTool(slug, files, body, outputDir) {
     const totalPages = pdfSource.getPageCount();
     const selectedPages = parsePdfPages(body.pages, totalPages);
 
-    if (slug === 'extract-pages') {
+    if (slug === 'extract-pages' || slug === 'reorder-pages') {
       const muhammara = require('muhammara');
-      const fileName = createStorageName('extracted.pdf', '.pdf');
+      const prefix = slug === 'reorder-pages' ? 'reordered' : 'extracted';
+      const fileName = createStorageName(`${prefix}.pdf`, '.pdf');
       const filePath = path.join(outputDir, fileName);
       const writer = muhammara.createWriter(filePath);
       try {
@@ -869,7 +882,7 @@ async function processPdfTool(slug, files, body, outputDir) {
         try { writer.end(); } catch (e) {}
         throw err;
       }
-      return { kind: 'file', title: 'Extracted Pages', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+      return { kind: 'file', title: slug === 'reorder-pages' ? 'Reordered PDF' : 'Extracted Pages', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
     }
 
     if (slug === 'delete-pages') {
@@ -1196,7 +1209,7 @@ async function executeTool({ slug, body, files, workspaceId, workspaceOutputDir 
     'password-strength-checker', 'age-calculator', 'percentage-calculator', 'cgpa-calculator', 'sgpa-calculator',
     'attendance-calculator', 'gpa-predictor', 'gst-calculator', 'emi-calculator', 'loan-calculator', 'profit-calculator',
     'margin-calculator', 'discount-calculator', 'unit-converter', 'currency-converter', 'random-generator',
-    'study-timer', 'invoice-generator'
+    'study-timer', 'invoice-generator', 'text-cleaner', 'duplicate-line-remover'
   ].includes(slug)) {
     return executeTextTool(slug, body);
   }
@@ -1206,7 +1219,7 @@ async function executeTool({ slug, body, files, workspaceId, workspaceOutputDir 
     return processImageTool(slug, files[0], body, outputDir);
   }
 
-  if (slug.endsWith('-pdf') || slug === 'extract-pages' || slug === 'delete-pages' || slug === 'add-watermark' || slug === 'pdf-page-numbering' || slug === 'image-to-pdf') {
+  if (slug.endsWith('-pdf') || slug === 'extract-pages' || slug === 'delete-pages' || slug === 'add-watermark' || slug === 'pdf-page-numbering' || slug === 'image-to-pdf' || slug === 'reorder-pages') {
     return processPdfTool(slug, files, body, outputDir);
   }
 

@@ -8,8 +8,7 @@ const SERVER_ONLY_CATEGORIES = new Set(['pdf']);
 
 // These specific tool slugs must always run server-side regardless of category.
 const SERVER_ONLY_TOOL_SLUGS = new Set([
-  'background-removal', 'image-upscaler', 'thumbnail-generator',
-  'barcode-generator', 'qr-generator', 'invoice-generator'
+  'background-removal', 'image-upscaler', 'invoice-generator'
 ]);
 
 let cachedSettings = null;
@@ -38,6 +37,10 @@ const DEFAULT_SETTINGS = {
     maintenanceMode: false
   },
   toolOverrides: [],
+  pwaOfflineCache: true,
+  pwaCacheVersion: 1,
+  pwaBackgroundSync: true,
+  pwaIndexedDbUsage: true,
   analytics: {
     browserProcessedJobs: 0,
     browserSuccessCount: 0,
@@ -107,6 +110,10 @@ async function updateSettings(data) {
   if (data.downloadRetentionUnit !== undefined) settings.downloadRetentionUnit = data.downloadRetentionUnit;
   if (data.fallbackRetentionValue !== undefined) settings.fallbackRetentionValue = Number(data.fallbackRetentionValue);
   if (data.fallbackRetentionUnit !== undefined) settings.fallbackRetentionUnit = data.fallbackRetentionUnit;
+  if (data.pwaOfflineCache !== undefined) settings.pwaOfflineCache = !!data.pwaOfflineCache;
+  if (data.pwaCacheVersion !== undefined) settings.pwaCacheVersion = Number(data.pwaCacheVersion);
+  if (data.pwaBackgroundSync !== undefined) settings.pwaBackgroundSync = !!data.pwaBackgroundSync;
+  if (data.pwaIndexedDbUsage !== undefined) settings.pwaIndexedDbUsage = !!data.pwaIndexedDbUsage;
 
   // Update emergencyMode
   if (data.emergencyMode) {
@@ -256,7 +263,10 @@ function getProcessingConfigForTool(settings, tool) {
     uploadsDisabled: !!settings.emergencyMode.uploadsDisabled,
     processingDisabled: !!settings.emergencyMode.processingDisabled || categoryDisabled,
     shouldUploadToCloudinary,
-    storageStrategy: settings.storageStrategy
+    storageStrategy: settings.storageStrategy,
+    pwaOfflineCache: settings.pwaOfflineCache !== false,
+    pwaBackgroundSync: settings.pwaBackgroundSync !== false,
+    pwaIndexedDbUsage: settings.pwaIndexedDbUsage !== false
   };
 }
 

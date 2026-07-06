@@ -15,7 +15,8 @@ const toolCatalog = [
       { slug: 'add-watermark', name: 'Add Watermark' },
       { slug: 'pdf-to-image', name: 'PDF to Image' },
       { slug: 'image-to-pdf', name: 'Image to PDF' },
-      { slug: 'pdf-page-numbering', name: 'PDF Page Numbering' }
+      { slug: 'pdf-page-numbering', name: 'PDF Page Numbering' },
+      { slug: 'reorder-pages', name: 'Reorder PDF Pages' }
     ]
   },
   {
@@ -130,7 +131,9 @@ const toolCatalog = [
       { slug: 'currency-converter', name: 'Currency Converter' },
       { slug: 'random-generator', name: 'Random Generator' },
       { slug: 'text-case-converter', name: 'Text Case Converter' },
-      { slug: 'word-counter', name: 'Word Counter' }
+      { slug: 'word-counter', name: 'Word Counter' },
+      { slug: 'text-cleaner', name: 'Text Cleaner' },
+      { slug: 'duplicate-line-remover', name: 'Duplicate Line Remover' }
     ]
   }
 ];

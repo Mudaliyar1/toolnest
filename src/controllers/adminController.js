@@ -136,6 +136,9 @@ async function updateProcessingSettings(req, res) {
       downloadRetentionUnit: req.body.downloadRetentionUnit || 'minutes',
       fallbackRetentionValue: Number(req.body.fallbackRetentionValue || 10),
       fallbackRetentionUnit: req.body.fallbackRetentionUnit || 'minutes',
+      pwaOfflineCache: req.body.pwaOfflineCache === 'on',
+      pwaBackgroundSync: req.body.pwaBackgroundSync === 'on',
+      pwaIndexedDbUsage: req.body.pwaIndexedDbUsage === 'on',
       emergencyMode: {
         uploadsDisabled: req.body.uploadsDisabled === 'on',
         videoDisabled: req.body.videoDisabled === 'on',
@@ -214,6 +217,18 @@ async function purgeAllFiles(req, res) {
   }
 }
 
+async function clearPwaCache(req, res) {
+  const { getSettings, updateSettings } = require('../services/settingsService');
+  try {
+    const settings = await getSettings();
+    const newVersion = (settings.pwaCacheVersion || 1) + 1;
+    await updateSettings({ pwaCacheVersion: newVersion });
+    return res.redirect(`${env.adminAccessPath}/processing?success=Successfully triggered dynamic cache purge. All client devices will clear cache and reload on next visit.`);
+  } catch (error) {
+    return res.redirect(`${env.adminAccessPath}/processing?error=${encodeURIComponent(error.message)}`);
+  }
+}
+
 module.exports = {
   handleLogin,
   handleLogout,
@@ -222,5 +237,6 @@ module.exports = {
   renderProcessingManagement,
   updateProcessingSettings,
   purgeFiles,
-  purgeAllFiles
+  purgeAllFiles,
+  clearPwaCache
 };

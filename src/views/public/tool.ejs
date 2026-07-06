@@ -101,7 +101,7 @@
                     inside your browser.</div>
                 </div>
                 <% if (['merge-pdf', 'split-pdf' , 'compress-pdf' , 'pdf-page-numbering' , 'image-to-pdf' , 'rotate-pdf'
-                  , 'extract-pages' , 'delete-pages' , 'add-watermark' ].includes(tool.slug)) { %>
+                  , 'extract-pages' , 'delete-pages' , 'add-watermark', 'reorder-pages' ].includes(tool.slug)) { %>
                   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
                     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
                   <% } %>
@@ -175,7 +175,7 @@
                                       if (slug === 'rotate-pdf') {
                                       return ['files', 'rotation'].includes(field);
                                       }
-                                      if (['extract-pages', 'delete-pages'].includes(slug)) {
+                                      if (['extract-pages', 'delete-pages', 'reorder-pages'].includes(slug)) {
                                       return ['files', 'pages'].includes(field);
                                       }
                                       if (slug === 'add-watermark') {
@@ -234,7 +234,7 @@
                                       if (['json-formatter', 'json-validator', 'base64-encoder', 'base64-decoder',
                                       'url-encoder', 'url-decoder', 'jwt-decoder', 'sql-formatter', 'html-formatter',
                                       'css-minifier', 'javascript-minifier', 'password-strength-checker',
-                                      'word-counter'].includes(slug)) {
+                                      'word-counter', 'text-cleaner', 'duplicate-line-remover'].includes(slug)) {
                                       return field === 'text';
                                       }
                                       if (slug === 'regex-tester') {
@@ -309,6 +309,10 @@
                                       if (slug === 'extract-pages') {
                                       if (field === 'files') return 'Select PDF File';
                                       if (field === 'pages') return 'Pages to Extract (e.g. 1, 3-5)';
+                                      }
+                                      if (slug === 'reorder-pages') {
+                                      if (field === 'files') return 'Select PDF File';
+                                      if (field === 'pages') return 'New Page Sequence Order (e.g. 3, 1, 2, 4)';
                                       }
                                       if (slug === 'delete-pages') {
                                       if (field === 'files') return 'Select PDF File';
@@ -518,7 +522,7 @@
                                                     , 'sql-formatter' , 'html-formatter' , 'css-minifier'
                                                     , 'javascript-minifier' , 'password-strength-checker'
                                                     , 'word-counter' , 'cgpa-calculator' , 'invoice-generator'
-                                                    , 'regex-tester' , 'hash-generator' ].includes(slug)) { %>
+                                                    , 'regex-tester' , 'hash-generator' , 'text-cleaner' , 'duplicate-line-remover' ].includes(slug)) { %>
                                                     <div class="col-12">
                                                       <label class="form-label fw-semibold">Input Text / Data</label>
                                                       <textarea name="text" rows="6" class="form-control"
@@ -1681,6 +1685,19 @@
                                                     </div>
                                                   </div>
                                                   <% } %>
+                                                   <script>
+                                                     document.addEventListener('DOMContentLoaded', () => {
+                                                       if (typeof window.logToolHistory === 'function') {
+                                                         const kind = '<%= result.kind %>';
+                                                         const title = '<%= result.title %>';
+                                                         if (kind === 'text') {
+                                                           window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed output');
+                                                         } else if (kind === 'file') {
+                                                           window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed file');
+                                                         }
+                                                       }
+                                                     });
+                                                   </script>
                                                     <% } %>
 
                                                       <!-- Professional About / FAQ Section at the bottom of card -->
