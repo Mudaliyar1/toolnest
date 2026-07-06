@@ -56,9 +56,16 @@ app.use(hpp());
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 240,
+  limit: 1000, // Increased limit to support PWA sync/polling
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode);
+    res.render('errors/rate-limit', {
+      title: 'Too Many Requests | RaiseTool',
+      siteName: env.siteName || 'RaiseTool'
+    });
+  }
 }));
 
 app.use(slowDown({
