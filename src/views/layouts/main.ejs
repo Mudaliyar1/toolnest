@@ -80,6 +80,13 @@
             if (splash) splash.remove();
           }
 
+          // Dynamically lock orientation to portrait in PWA mode if supported by the device browser
+          if (isRunningAsPWA() && window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
+            window.screen.orientation.lock('portrait-primary').catch((err) => {
+              console.warn('[PWA] Dynamic screen orientation lock failed:', err);
+            });
+          }
+
           if (isRunningAsPWA()) {
             console.log('[PWA] Standalone mode detected. Initializing SPA Navigation Router.');
 
