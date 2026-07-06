@@ -1,5 +1,5 @@
 (function() {
-  document.addEventListener('DOMContentLoaded', () => {
+  function initWorkspace() {
     const workspaceContainer = document.getElementById('workspace-container');
     const serverNowAttr = workspaceContainer ? workspaceContainer.getAttribute('data-server-now') : null;
     const serverNow = serverNowAttr ? new Date(serverNowAttr).getTime() : Date.now();
@@ -122,5 +122,11 @@
 
     // Poll every 5 seconds
     setInterval(checkWorkspaceFiles, 5000);
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWorkspace);
+  } else {
+    initWorkspace();
+  }
 })();

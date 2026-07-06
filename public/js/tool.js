@@ -1,5 +1,5 @@
 (function () {
-  document.addEventListener('DOMContentLoaded', () => {
+  function initTool() {
     const fileInput = document.getElementById('media-file-input');
     const previewContainer = document.getElementById('media-preview-container');
     const thumbnailWrapper = document.getElementById('preview-thumbnail-wrapper');
@@ -1637,5 +1637,11 @@
       }
       throw err;
     }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTool);
+  } else {
+    initTool();
   }
 })();

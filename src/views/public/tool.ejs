@@ -1685,19 +1685,26 @@
                                                     </div>
                                                   </div>
                                                   <% } %>
-                                                   <script>
-                                                     document.addEventListener('DOMContentLoaded', () => {
-                                                       if (typeof window.logToolHistory === 'function') {
-                                                         const kind = '<%= result.kind %>';
-                                                         const title = '<%= result.title %>';
-                                                         if (kind === 'text') {
-                                                           window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed output');
-                                                         } else if (kind === 'file') {
-                                                           window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed file');
-                                                         }
-                                                       }
-                                                     });
-                                                   </script>
+                                                  <script>
+                                                      (function() {
+                                                        function logHistory() {
+                                                          if (typeof window.logToolHistory === 'function') {
+                                                            const kind = '<%= result.kind %>';
+                                                            const title = '<%= result.title %>';
+                                                            if (kind === 'text') {
+                                                              window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed output');
+                                                            } else if (kind === 'file') {
+                                                              window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed file');
+                                                            }
+                                                          }
+                                                        }
+                                                        if (document.readyState === 'loading') {
+                                                          document.addEventListener('DOMContentLoaded', logHistory);
+                                                        } else {
+                                                          logHistory();
+                                                        }
+                                                      })();
+                                                    </script>
                                                     <% } %>
 
                                                       <!-- Professional About / FAQ Section at the bottom of card -->
