@@ -486,6 +486,31 @@ async function processImageTool(slug, file, body, outputDir) {
   return { kind: 'file', title: 'Processed Image', files: [{ path: filePath, name: fileName, mimeType }] };
 }
 
+async function decryptPdfBufferSafely(sourceBuffer, password) {
+  const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
+  try {
+    return await decryptPDF(new Uint8Array(sourceBuffer), password);
+  } catch (decryptErr) {
+    console.warn('pdf-decrypt failed, trying muhammara fallback:', decryptErr.message);
+    try {
+      const muhammara = require('muhammara');
+      const input = new muhammara.PDFRStreamForBuffer(sourceBuffer);
+      const output = new muhammara.PDFWStreamForBuffer();
+      
+      muhammara.recrypt(input, output, {
+        password: password
+      });
+      if (output.buffer && output.buffer.length > 0) {
+        return new Uint8Array(output.buffer);
+      }
+      throw new Error('Recrypt output buffer is empty.');
+    } catch (recryptErr) {
+      console.error('Muhammara recrypt fallback also failed:', recryptErr.message);
+      throw decryptErr; // Throw original pdf-decrypt validation error
+    }
+  }
+}
+
 async function loadPdfSafely(filePath, password) {
   const buffer = await fs.readFile(filePath);
   try {
@@ -497,8 +522,7 @@ async function loadPdfSafely(filePath, password) {
         throw new Error('This PDF is encrypted. Please use the Unlock PDF tool first to decrypt and save a clean copy.');
       }
       try {
-        const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
-        const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+        const decryptedBytes = await decryptPdfBufferSafely(buffer, cleanPassword);
         return await PDFDocument.load(decryptedBytes);
       } catch (decryptErr) {
         throw new Error(`Failed to decrypt PDF. ${decryptErr.message}`);
@@ -519,11 +543,10 @@ async function processPdfTool(slug, files, body, outputDir) {
     if (!password) {
       throw new Error('Please enter the password to decrypt the PDF.');
     }
-    const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
     const sourceBuffer = await fs.readFile(pdfFiles[0].path);
     let decryptedBytes;
     try {
-      decryptedBytes = await decryptPDF(new Uint8Array(sourceBuffer), password);
+      decryptedBytes = await decryptPdfBufferSafely(sourceBuffer, password);
     } catch (decryptErr) {
       throw new Error(`Failed to decrypt PDF. ${decryptErr.message}`);
     }
@@ -590,8 +613,7 @@ async function processPdfTool(slug, files, body, outputDir) {
           if (!cleanPassword) {
             throw new Error('One of the PDFs is encrypted. Please provide the decryption password.');
           }
-          const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
-          const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+          const decryptedBytes = await decryptPdfBufferSafely(buffer, cleanPassword);
           const decryptedTempPath = file.path + '.decrypted.pdf';
           await fs.writeFile(decryptedTempPath, Buffer.from(decryptedBytes));
           tempFilesToCleanup.push(decryptedTempPath);
@@ -615,7 +637,6 @@ async function processPdfTool(slug, files, body, outputDir) {
 
   if (slug === 'split-pdf') {
     const muhammara = require('muhammara');
-    const { decryptPDF } = require('@pdfsmaller/pdf-decrypt');
     const buffer = await fs.readFile(pdfFiles[0].path);
     let pathToUse = pdfFiles[0].path;
     const tempFilesToCleanup = [];
@@ -635,7 +656,7 @@ async function processPdfTool(slug, files, body, outputDir) {
       if (!cleanPassword) {
         throw new Error('This PDF is encrypted. Please provide the decryption password.');
       }
-      const decryptedBytes = await decryptPDF(new Uint8Array(buffer), cleanPassword);
+      const decryptedBytes = await decryptPdfBufferSafely(buffer, cleanPassword);
       const decryptedTempPath = pdfFiles[0].path + '.decrypted.pdf';
       await fs.writeFile(decryptedTempPath, Buffer.from(decryptedBytes));
       tempFilesToCleanup.push(decryptedTempPath);

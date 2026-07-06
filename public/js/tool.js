@@ -213,6 +213,97 @@
       });
     }
 
+    // Helper for AJAX Server submission
+    function submitFormToServer() {
+      // If there are no files, standard form submit
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        form.submit();
+        return;
+      }
+
+      showProcessingModal('server');
+      if (submitBtn) submitBtn.disabled = true;
+
+      const startTime = Date.now();
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', form.action, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+
+          const progressEl = document.getElementById('browser-modal-progress-bar');
+          if (progressEl) progressEl.style.width = `${percent}%`;
+
+          const statusEl = document.getElementById('browser-modal-status');
+          if (statusEl) statusEl.textContent = `Uploading files... ${percent}%`;
+
+          const elapsed = (Date.now() - startTime) / 1000;
+          if (elapsed > 0.1) {
+            const bps = event.loaded / elapsed;
+            let speedText = '';
+            if (bps > 1024 * 1024) {
+              speedText = (bps / (1024 * 1024)).toFixed(2) + ' MB/s';
+            } else if (bps > 1024) {
+              speedText = (bps / 1024).toFixed(2) + ' KB/s';
+            } else {
+              speedText = Math.round(bps) + ' B/s';
+            }
+
+            const bytesRemaining = event.total - event.loaded;
+            const remainingSeconds = Math.round(bytesRemaining / bps);
+            let timeText = '';
+            if (remainingSeconds > 60) {
+              timeText = Math.floor(remainingSeconds / 60) + 'm ' + (remainingSeconds % 60) + 's left';
+            } else {
+              timeText = remainingSeconds + 's left';
+            }
+
+            const uploadSpeedEl = document.getElementById('server-upload-speed');
+            const uploadTimeEl = document.getElementById('server-upload-time');
+            if (uploadSpeedEl) uploadSpeedEl.innerHTML = `Speed: <span class="fw-bold text-primary">${speedText}</span>`;
+            if (uploadTimeEl) uploadTimeEl.innerHTML = `Time Remaining: <span class="fw-bold text-primary">${timeText}</span>`;
+
+            if (percent >= 100) {
+              if (statusEl) statusEl.textContent = `Processing on server... please wait.`;
+              if (uploadTimeEl) uploadTimeEl.innerHTML = `Status: <span class="fw-bold text-primary">Processing on server...</span>`;
+              if (uploadSpeedEl) uploadSpeedEl.innerHTML = `Please wait while server processes the file.`;
+            }
+          }
+        }
+      };
+
+      const clearProcessingTimer = () => {
+        if (window.processingInterval) {
+          clearInterval(window.processingInterval);
+          window.processingInterval = null;
+        }
+      };
+
+      xhr.onload = () => {
+        clearProcessingTimer();
+        if (xhr.status >= 200 && xhr.status < 400) {
+          if (processingModal) {
+            processingModal.hide();
+          }
+          document.open();
+          document.write(xhr.responseText);
+          document.close();
+        } else {
+          errorProcessingModal('Upload or processing failed. Please check your files.');
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      };
+
+      xhr.onerror = () => {
+        clearProcessingTimer();
+        errorProcessingModal('Network upload failure. Please verify connection.');
+        if (submitBtn) submitBtn.disabled = false;
+      };
+
+      xhr.send(new FormData(form));
+    }
+
     // Intercept form submission
     if (form) {
       form.addEventListener('submit', async (e) => {
@@ -293,118 +384,23 @@
           try {
             const formData = new FormData(form);
             const files = fileInput ? Array.from(fileInput.files || []) : [];
+            showProcessingModal('browser');
             await runBrowserProcessing(slug, formData, files);
           } catch (error) {
-            console.error('Browser execution failed:', error);
-            if (error.message === '__FALLBACK_TO_SERVER__') return; // silent server fallback
-            if (validationErrorEl) {
-              validationErrorEl.textContent = `Processing failed: ${error.message}`;
-              validationErrorEl.classList.remove('d-none');
-            }
+            console.error('Browser execution failed, falling back to server:', error);
+            if (error.message === '__FALLBACK_TO_SERVER__') return; // handled
+
+            // Silently fall back to server processing!
+            submitFormToServer();
           } finally {
             if (submitBtn) submitBtn.disabled = false;
           }
           return;
         }
 
-        // Standard AJAX Server submission
-        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-          return;
-        }
-
+        // Server execution path
         e.preventDefault();
-
-        progressContainer.classList.remove('d-none');
-        progressBar.style.width = '0%';
-        progressText.textContent = '0%';
-        if (statusDetails) statusDetails.textContent = '';
-        if (submitBtn) submitBtn.disabled = true;
-
-        const startTime = Date.now();
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', form.action, true);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            progressBar.style.width = percent + '%';
-            progressText.textContent = percent + '%';
-
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (statusDetails && elapsed > 0.1) {
-              const bps = event.loaded / elapsed;
-              let speedText = '';
-              if (bps > 1024 * 1024) {
-                speedText = (bps / (1024 * 1024)).toFixed(2) + ' MB/s';
-              } else if (bps > 1024) {
-                speedText = (bps / 1024).toFixed(2) + ' KB/s';
-              } else {
-                speedText = Math.round(bps) + ' B/s';
-              }
-
-              const bytesRemaining = event.total - event.loaded;
-              const remainingSeconds = Math.round(bytesRemaining / bps);
-              let timeText = '';
-              if (remainingSeconds > 60) {
-                timeText = Math.floor(remainingSeconds / 60) + 'm ' + (remainingSeconds % 60) + 's left';
-              } else {
-                timeText = remainingSeconds + 's left';
-              }
-
-              if (percent >= 100) {
-                if (!window.processingInterval) {
-                  let secondsLeft = 60;
-                  statusDetails.textContent = `Processing on server... (${secondsLeft}s remaining)`;
-                  window.processingInterval = setInterval(() => {
-                    secondsLeft--;
-                    if (secondsLeft > 0) {
-                      statusDetails.textContent = `Processing on server... (${secondsLeft}s remaining)`;
-                    } else {
-                      statusDetails.textContent = `Finalizing compression, please wait...`;
-                      clearInterval(window.processingInterval);
-                      window.processingInterval = null;
-                    }
-                  }, 1000);
-                }
-              } else {
-                statusDetails.textContent = `(${speedText} - ${timeText})`;
-              }
-            }
-          }
-        };
-
-        const clearProcessingTimer = () => {
-          if (window.processingInterval) {
-            clearInterval(window.processingInterval);
-            window.processingInterval = null;
-          }
-        };
-
-        xhr.onload = () => {
-          clearProcessingTimer();
-          if (xhr.status >= 200 && xhr.status < 400) {
-            document.open();
-            document.write(xhr.responseText);
-            document.close();
-          } else {
-            alert('Upload or processing failed. Please check your files and try again.');
-            progressBar.style.width = '0%';
-            progressText.textContent = '0%';
-            progressContainer.classList.add('d-none');
-            if (submitBtn) submitBtn.disabled = false;
-          }
-        };
-
-        xhr.onerror = () => {
-          clearProcessingTimer();
-          alert('Network upload failure. Please verify connection.');
-          progressBar.style.width = '0%';
-          progressText.textContent = '0%';
-          progressContainer.classList.add('d-none');
-          if (submitBtn) submitBtn.disabled = false;
-        };
-
-        xhr.send(new FormData(form));
+        submitFormToServer();
       });
     }
 
@@ -434,26 +430,42 @@
       container.scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function showBrowserFileResult(fileName, objectUrl, fileSize = 0) {
+    async function showBrowserFileResult(fileName, objectUrl, fileSize = 0, append = false) {
       const container = document.getElementById('browser-result-container');
       const textWrapper = document.getElementById('browser-result-text-wrapper');
       const fileList = document.getElementById('browser-result-file-list');
 
-      fileList.innerHTML = `
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3">
+      // Random unique ID to target status element for this file
+      const statusId = 'status_' + Math.random().toString(36).substring(2, 9);
+
+      const itemHtml = `
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border rounded-3 p-3 mb-2">
           <div>
             <div class="fw-medium">${fileName}</div>
             ${fileSize ? `<span class="small text-muted font-monospace">${formatBytes(fileSize)}</span>` : ''}
-            <div id="browser-upload-status" class="small text-info mt-1">Saving to workspace...</div>
+            <div id="${statusId}" class="browser-upload-status small text-info mt-1">Saving to workspace...</div>
           </div>
           <a href="${objectUrl}" class="btn btn-outline-primary btn-sm" download="${fileName}">Download</a>
         </div>
       `;
 
+      if (append) {
+        fileList.insertAdjacentHTML('beforeend', itemHtml);
+      } else {
+        fileList.innerHTML = itemHtml;
+      }
+
       textWrapper.classList.add('d-none');
       fileList.classList.remove('d-none');
       container.classList.remove('d-none');
       container.scrollIntoView({ behavior: 'smooth' });
+
+      // Enforce zero server uploads if strategy is browser
+      const statusEl = document.getElementById(statusId);
+      if (config.storageStrategy === 'browser') {
+        if (statusEl) statusEl.innerHTML = `<span class="text-muted">🔒 Sandbox Mode (Zero server uploads enabled)</span>`;
+        return;
+      }
 
       // Upload in the background to show in Workspace
       try {
@@ -476,7 +488,6 @@
         });
 
         const uploadData = await uploadRes.json();
-        const statusEl = document.getElementById('browser-upload-status');
         if (uploadData.success) {
           if (statusEl) statusEl.innerHTML = `<span class="text-success">✔ Saved to Workspace!</span>`;
         } else {
@@ -485,7 +496,6 @@
         }
       } catch (err) {
         console.error('Failed to sync browser result to workspace:', err);
-        const statusEl = document.getElementById('browser-upload-status');
         if (statusEl) statusEl.innerHTML = `<span class="text-danger">✖ Failed to save to workspace.</span>`;
       }
     }
@@ -516,6 +526,189 @@
         const pdfBytes = await doc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         showBrowserFileResult(`rotated_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'split-pdf') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const totalPages = doc.getPageCount();
+        const fileList = document.getElementById('browser-result-file-list');
+        if (fileList) fileList.innerHTML = ''; // clear
+        for (let i = 0; i < totalPages; i++) {
+          const splitDoc = await PDFLib.PDFDocument.create();
+          const [copiedPage] = await splitDoc.copyPages(doc, [i]);
+          splitDoc.addPage(copiedPage);
+          const pdfBytes = await splitDoc.save();
+          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const name = `${files[0].name.replace(/\.pdf$/i, '')}_page_${i + 1}.pdf`;
+          await showBrowserFileResult(name, URL.createObjectURL(blob), blob.size, i > 0);
+        }
+      }
+      else if (slug === 'compress-pdf') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const compressedDoc = await PDFLib.PDFDocument.create();
+        const copiedPages = await compressedDoc.copyPages(doc, doc.getPageIndices());
+        copiedPages.forEach(p => compressedDoc.addPage(p));
+        const pdfBytes = await compressedDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`compressed_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'pdf-page-numbering') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const pages = doc.getPages();
+        const position = formData.get('position') || 'bottom-right';
+        const startNumber = parseInt(formData.get('startNumber') || 1);
+
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i];
+          const { width, height } = page.getSize();
+          const pageNumText = `${i + startNumber}`;
+
+          let x = width - 50;
+          let y = 30;
+          if (position === 'bottom-left') {
+            x = 50;
+          } else if (position === 'bottom-center') {
+            x = width / 2;
+          } else if (position === 'top-left') {
+            x = 50;
+            y = height - 30;
+          } else if (position === 'top-center') {
+            x = width / 2;
+            y = height - 30;
+          } else if (position === 'top-right') {
+            x = width - 50;
+            y = height - 30;
+          }
+
+          page.drawText(pageNumText, {
+            x: x,
+            y: y,
+            size: 10,
+            color: PDFLib.rgb(0, 0, 0)
+          });
+        }
+
+        const pdfBytes = await doc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`numbered_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'image-to-pdf') {
+        if (files.length === 0) throw new Error('Please select an image file.');
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        for (const file of files) {
+          const imgBytes = await file.arrayBuffer();
+          let pdfImg;
+          if (file.type === 'image/png' || file.name.endsWith('.png')) {
+            pdfImg = await pdfDoc.embedPng(imgBytes);
+          } else {
+            pdfImg = await pdfDoc.embedJpg(imgBytes);
+          }
+          const page = pdfDoc.addPage([pdfImg.width, pdfImg.height]);
+          page.drawImage(pdfImg, {
+            x: 0,
+            y: 0,
+            width: pdfImg.width,
+            height: pdfImg.height
+          });
+        }
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult('image_to_pdf.pdf', URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'extract-pages') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const pagesStr = formData.get('pages') || '';
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const totalPages = doc.getPageCount();
+
+        const pageIndices = [];
+        if (pagesStr.includes('-')) {
+          const parts = pagesStr.split('-');
+          const start = parseInt(parts[0]) - 1;
+          const end = parseInt(parts[1]) - 1;
+          for (let i = start; i <= end; i++) {
+            if (i >= 0 && i < totalPages) pageIndices.push(i);
+          }
+        } else {
+          pagesStr.split(',').forEach(p => {
+            const idx = parseInt(p.trim()) - 1;
+            if (idx >= 0 && idx < totalPages) pageIndices.push(idx);
+          });
+        }
+
+        if (pageIndices.length === 0) throw new Error('No valid page numbers specified.');
+
+        const newDoc = await PDFLib.PDFDocument.create();
+        const copiedPages = await newDoc.copyPages(doc, pageIndices);
+        copiedPages.forEach(p => newDoc.addPage(p));
+        const pdfBytes = await newDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`extracted_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'delete-pages') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const pagesStr = formData.get('pages') || '';
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const totalPages = doc.getPageCount();
+
+        const excludedIndices = new Set();
+        if (pagesStr.includes('-')) {
+          const parts = pagesStr.split('-');
+          const start = parseInt(parts[0]) - 1;
+          const end = parseInt(parts[1]) - 1;
+          for (let i = start; i <= end; i++) {
+            if (i >= 0 && i < totalPages) excludedIndices.add(i);
+          }
+        } else {
+          pagesStr.split(',').forEach(p => {
+            const idx = parseInt(p.trim()) - 1;
+            if (idx >= 0 && idx < totalPages) excludedIndices.add(idx);
+          });
+        }
+
+        const pageIndices = [];
+        for (let i = 0; i < totalPages; i++) {
+          if (!excludedIndices.has(i)) pageIndices.push(i);
+        }
+
+        if (pageIndices.length === 0) throw new Error('Cannot delete all pages of the document.');
+
+        const newDoc = await PDFLib.PDFDocument.create();
+        const copiedPages = await newDoc.copyPages(doc, pageIndices);
+        copiedPages.forEach(p => newDoc.addPage(p));
+        const pdfBytes = await newDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`deleted_pages_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+      }
+      else if (slug === 'add-watermark') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const text = formData.get('text') || 'Confidential';
+        const bytes = await files[0].arrayBuffer();
+        const doc = await PDFLib.PDFDocument.load(bytes);
+        const pages = doc.getPages();
+
+        for (const page of pages) {
+          const { width, height } = page.getSize();
+          page.drawText(text, {
+            x: width / 4,
+            y: height / 2,
+            size: Math.round(width * 0.08),
+            color: PDFLib.rgb(0.7, 0.7, 0.7),
+            opacity: 0.4,
+            rotate: PDFLib.degrees(45)
+          });
+        }
+
+        const pdfBytes = await doc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        showBrowserFileResult(`watermarked_${files[0].name}`, URL.createObjectURL(blob), blob.size);
       }
 
       // Image Tools
@@ -887,9 +1080,11 @@
     }
   }
 
-  function showProcessingModal() {
+  function showProcessingModal(mode = 'browser') {
     initProcessingModal();
     if (processingModal) {
+      if (countdownInterval) clearInterval(countdownInterval);
+
       // Reset modal UI to processing state
       document.getElementById('browser-modal-spinner').classList.remove('d-none');
       document.getElementById('browser-modal-progress-container').classList.remove('d-none');
@@ -897,37 +1092,46 @@
       document.getElementById('browser-modal-result-section').classList.add('d-none');
       document.getElementById('btn-close-browser-modal').classList.add('d-none');
 
+      const titleEl = document.getElementById('browserProcessingModalLabel');
       const statusEl = document.getElementById('browser-modal-status');
-      if (statusEl) statusEl.textContent = 'Initialising processing engine...';
-
       const progressEl = document.getElementById('browser-modal-progress-bar');
+      const timerContainer = document.getElementById('browser-modal-timer-container');
+
       if (progressEl) progressEl.style.width = '0%';
 
-      const countdownEl = document.getElementById('browser-modal-countdown');
-      if (countdownEl) countdownEl.textContent = '30';
+      if (mode === 'browser') {
+        if (titleEl) titleEl.textContent = '🔒 Local Sandbox Processing';
+        if (statusEl) statusEl.textContent = 'Initialising processing engine...';
+        if (timerContainer) {
+          timerContainer.innerHTML = 'Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">30</span> seconds';
+        }
 
-      const timerContainer = document.getElementById('browser-modal-timer-container');
-      if (timerContainer) {
-        timerContainer.innerHTML = 'Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">30</span> seconds';
+        // Start 30 seconds countdown
+        remainingSeconds = 30;
+        countdownInterval = setInterval(() => {
+          remainingSeconds--;
+          const countdownEl2 = document.getElementById('browser-modal-countdown');
+          if (remainingSeconds <= 0) {
+            if (countdownEl2) countdownEl2.textContent = '0';
+            const timerContainer2 = document.getElementById('browser-modal-timer-container');
+            if (timerContainer2) timerContainer2.textContent = 'Finishing up...';
+            clearInterval(countdownInterval);
+          } else {
+            if (countdownEl2) countdownEl2.textContent = remainingSeconds;
+          }
+        }, 1000);
+      } else {
+        if (titleEl) titleEl.textContent = '⚡ Secure Server Upload & Processing';
+        if (statusEl) statusEl.textContent = 'Uploading files to server... 0%';
+        if (timerContainer) {
+          timerContainer.innerHTML = `
+            <div id="server-upload-time" class="mb-1">Time Remaining: <span class="fw-bold text-primary">Calculating...</span></div>
+            <div id="server-upload-speed" class="small text-secondary">Speed: <span class="fw-bold text-primary">0 KB/s</span></div>
+          `;
+        }
       }
 
       processingModal.show();
-
-      // Start 30 seconds countdown
-      remainingSeconds = 30;
-      if (countdownInterval) clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        remainingSeconds--;
-        const countdownEl2 = document.getElementById('browser-modal-countdown');
-        if (remainingSeconds <= 0) {
-          if (countdownEl2) countdownEl2.textContent = '0';
-          const timerContainer2 = document.getElementById('browser-modal-timer-container');
-          if (timerContainer2) timerContainer2.textContent = 'Finishing up...';
-          clearInterval(countdownInterval);
-        } else {
-          if (countdownEl2) countdownEl2.textContent = remainingSeconds;
-        }
-      }, 1000);
     }
   }
 

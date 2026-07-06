@@ -191,47 +191,9 @@ async function handleToolExecution(req, res, next) {
   } catch (error) {
     let processingConfig = null;
     try {
-      const { getSettings } = require('../services/settingsService');
+      const { getSettings, getProcessingConfigForTool } = require('../services/settingsService');
       const settings = await getSettings();
-      const override = settings.toolOverrides.find(o => o.toolSlug === tool.slug) || {};
-      
-      let method = override.processingMethod || 'default';
-      if (method === 'default') {
-        if (settings.storageStrategy === 'browser') {
-          method = 'browser';
-        } else if (settings.storageStrategy === 'server') {
-          method = 'server';
-        } else if (settings.storageStrategy === 'cloudinary') {
-          method = 'cloudinary';
-        } else {
-          if (['video', 'audio'].includes(tool.category)) {
-            method = 'server';
-          } else {
-            method = 'browser';
-          }
-        }
-      }
-      
-      if (settings.loadBalancerEnabled && method !== 'browser') {
-        const { getServerLoad } = require('../services/settingsService');
-        const load = getServerLoad();
-        if (load.cpu > settings.loadBalancerThresholdCpu || load.ram > settings.loadBalancerThresholdRam) {
-          if (!['video', 'audio'].includes(tool.category)) {
-            method = 'browser';
-          }
-        }
-      }
-      
-      if (settings.emergencyMode.processingDisabled) {
-        method = 'disabled';
-      }
-
-      processingConfig = {
-        method,
-        uploadLimitMb: override.uploadLimitMb || 15,
-        uploadsDisabled: settings.emergencyMode.uploadsDisabled,
-        processingDisabled: settings.emergencyMode.processingDisabled
-      };
+      processingConfig = getProcessingConfigForTool(settings, tool);
     } catch (e) {
       processingConfig = {
         method: 'server',

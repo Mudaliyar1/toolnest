@@ -1,8 +1,12 @@
 (function() {
   document.addEventListener('DOMContentLoaded', () => {
+    const workspaceContainer = document.getElementById('workspace-container');
+    const serverNowAttr = workspaceContainer ? workspaceContainer.getAttribute('data-server-now') : null;
+    const serverNow = serverNowAttr ? new Date(serverNowAttr).getTime() : Date.now();
+    const clockOffset = Date.now() - serverNow;
+
     // 1. Session expiration clock
     const timerEl = document.getElementById('countdown-timer');
-    const workspaceContainer = document.getElementById('workspace-container');
     
     let sessionExpiresAt = 0;
     if (timerEl) {
@@ -14,8 +18,8 @@
 
     function updateSessionTimer() {
       if (!timerEl || isNaN(sessionExpiresAt) || sessionExpiresAt <= 0) return;
-      const now = Date.now();
-      const diff = sessionExpiresAt - now;
+      const adjustedNow = Date.now() - clockOffset;
+      const diff = sessionExpiresAt - adjustedNow;
 
       if (diff <= 0) {
         timerEl.textContent = 'Expired';
@@ -40,7 +44,7 @@
     const fileTimers = document.querySelectorAll('.file-countdown-timer');
     
     function updateFileTimers() {
-      const now = Date.now();
+      const adjustedNow = Date.now() - clockOffset;
 
       fileTimers.forEach((el) => {
         const expiresAttr = el.getAttribute('data-expires');
@@ -48,7 +52,7 @@
         const expiresAt = new Date(expiresAttr).getTime();
         if (isNaN(expiresAt)) return;
 
-        const diff = expiresAt - now;
+        const diff = expiresAt - adjustedNow;
         if (diff <= 0) {
           const card = el.closest('.file-card');
           if (card) {
@@ -78,8 +82,8 @@
 
           const targetTimer = document.querySelector(`.file-countdown-timer[data-file-id="${fileId}"]`);
           if (targetTimer) {
-            // Update UI timer goal time to now + downloadRetentionMs
-            const newExpiry = new Date(Date.now() + downloadRetentionMs);
+            // Update UI timer goal time in server time
+            const newExpiry = new Date(Date.now() - clockOffset + downloadRetentionMs);
             targetTimer.setAttribute('data-expires', newExpiry.toISOString());
             
             // Also extend the session timer to cover this download retention

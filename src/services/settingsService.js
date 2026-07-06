@@ -194,55 +194,54 @@ function getProcessingConfigForTool(settings, tool) {
   // Determine if tool is server-only (no browser implementation exists)
   const isServerOnly = SERVER_ONLY_CATEGORIES.has(tool.category) || SERVER_ONLY_TOOL_SLUGS.has(tool.slug);
 
-  let method = override.processingMethod || 'default';
+  let method = 'server';
+  let storageMethod = 'server';
 
-  // If admin explicitly set a processing method for this tool, respect it
-  // but still enforce server-only constraint
-  if (method !== 'default') {
-    if (method === 'browser' && isServerOnly) {
-      method = 'server'; // Silently correct invalid admin override
-    }
-  } else {
-    // Resolve 'default' based on global storageStrategy
-    if (settings.storageStrategy === 'browser') {
-      method = isServerOnly ? 'server' : 'browser';
-    } else if (settings.storageStrategy === 'server') {
-      method = 'server';
-    } else if (settings.storageStrategy === 'cloudinary') {
-      method = isServerOnly ? 'server' : 'cloudinary';
-    } else {
-      // hybrid or any unknown value — server-only tools use server, rest use browser
-      method = isServerOnly ? 'server' : 'browser';
-    }
+  // If strategy is browser, force all tools to run browser-side
+  if (settings.storageStrategy === 'browser') {
+    method = 'browser';
+    storageMethod = 'server';
   }
+  // If strategy is server, force all tools to run server-side with local storage
+  else if (settings.storageStrategy === 'server') {
+    method = 'server';
+    storageMethod = 'server';
+  }
+  // If strategy is cloudinary, force all tools to run server-side with cloudinary storage
+  else if (settings.storageStrategy === 'cloudinary') {
+    method = 'server';
+    storageMethod = 'cloudinary';
+  }
+  // Hybrid mode: resolve tool-specific override or dynamic capability defaults
+  else {
+    method = override.processingMethod || 'default';
+    if (method === 'default') {
+      method = isServerOnly ? 'server' : 'browser';
+    }
+    
+    storageMethod = override.storageMethod || 'default';
+    if (storageMethod === 'default') {
+      storageMethod = settings.cloudinaryEnabled ? 'cloudinary' : 'server';
+    }
 
-  // Load balancer can only redirect non-server-only tools to browser
-  if (settings.loadBalancerEnabled && method !== 'browser') {
-    const load = getServerLoad();
-    if (load.cpu > settings.loadBalancerThresholdCpu || load.ram > settings.loadBalancerThresholdRam) {
-      if (!isServerOnly) {
-        method = 'browser';
+    // SILENT SANITY CORRECTION: If hybrid but tool has no browser capability
+    if (method === 'browser' && isServerOnly) {
+      method = 'server';
+    }
+
+    // Load balancer check (only applicable in Hybrid mode)
+    if (settings.loadBalancerEnabled && method !== 'browser') {
+      const load = getServerLoad();
+      if (load.cpu > settings.loadBalancerThresholdCpu || load.ram > settings.loadBalancerThresholdRam) {
+        if (!isServerOnly) {
+          method = 'browser';
+        }
       }
     }
   }
-  
+
   if (settings.emergencyMode.processingDisabled) {
     method = 'disabled';
-  }
-
-  // Resolve storage method
-  let storageMethod = override.storageMethod || 'default';
-  if (storageMethod === 'default') {
-    if (settings.storageStrategy === 'server') {
-      storageMethod = 'server';
-    } else if (settings.storageStrategy === 'cloudinary') {
-      storageMethod = 'cloudinary';
-    } else if (settings.storageStrategy === 'browser') {
-      storageMethod = 'server';
-    } else {
-      // hybrid strategy: use cloudinary if enabled, fallback to server
-      storageMethod = settings.cloudinaryEnabled ? 'cloudinary' : 'server';
-    }
   }
 
   const isCloudinaryAllowed = storageMethod === 'cloudinary' && settings.cloudinaryEnabled;
@@ -256,7 +255,8 @@ function getProcessingConfigForTool(settings, tool) {
     uploadLimitMb: override.uploadLimitMb || 15,
     uploadsDisabled: !!settings.emergencyMode.uploadsDisabled,
     processingDisabled: !!settings.emergencyMode.processingDisabled || categoryDisabled,
-    shouldUploadToCloudinary
+    shouldUploadToCloudinary,
+    storageStrategy: settings.storageStrategy
   };
 }
 
