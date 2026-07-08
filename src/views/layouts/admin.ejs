@@ -6,7 +6,7 @@
   <title><%= typeof title !== 'undefined' && title ? title : 'Admin Panel | RaiseTool' %></title>
   <meta name="theme-color" content="#0f172a">
   <link rel="stylesheet" href="/vendor/bootstrap.min.css">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/app.css?v=<%= typeof systemSettings !== 'undefined' && systemSettings && systemSettings.pwaCacheVersion || 1 %>">
   <script>
     (function() {
       const savedTheme = localStorage.getItem('theme');
