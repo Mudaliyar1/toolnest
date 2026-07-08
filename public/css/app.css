@@ -746,3 +746,21 @@ html.dark-theme .alert-info {
 html.dark-theme .alert-info * {
   color: #ffffff !important;
 }
+
+/* List group dark theme overrides */
+html.dark-theme .list-group-item {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+html.dark-theme .list-group-item .text-dark {
+  color: var(--text-main) !important;
+}
+html.dark-theme .list-group-item-action:hover,
+html.dark-theme .list-group-item-action:focus {
+  background-color: var(--bg-subtle) !important;
+  color: var(--text-main) !important;
+}
+html.dark-theme .list-group-item-action:hover .text-dark {
+  color: var(--text-main) !important;
+}

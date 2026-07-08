@@ -216,8 +216,17 @@
               const href = link.getAttribute('href');
               if (!href) return;
 
-              // Skip non-navigation anchors
-              if (href.startsWith('#') || href.startsWith('javascript:') || link.getAttribute('target') === '_blank') {
+              // Handle hash link scrolling smoothly within dynamic layouts
+              if (href.startsWith('#')) {
+                const target = document.querySelector(href);
+                if (target) {
+                  e.preventDefault();
+                  target.scrollIntoView({ behavior: 'smooth' });
+                }
+                return;
+              }
+
+              if (href.startsWith('javascript:') || link.getAttribute('target') === '_blank') {
                 return;
               }
 
@@ -312,9 +321,18 @@
           // Theme Toggle Event Listener
           const themeToggle = document.getElementById('theme-toggle-btn');
           if (themeToggle) {
+            function updateThemeToggleIcon(isDark) {
+              themeToggle.innerHTML = isDark ? '☀️' : '🌙';
+              themeToggle.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+            }
+
+            // Initialize icon state based on active class
+            updateThemeToggleIcon(document.documentElement.classList.contains('dark-theme'));
+
             themeToggle.addEventListener('click', () => {
               const isDark = document.documentElement.classList.toggle('dark-theme');
               localStorage.setItem('theme', isDark ? 'dark' : 'light');
+              updateThemeToggleIcon(isDark);
             });
           }
         });

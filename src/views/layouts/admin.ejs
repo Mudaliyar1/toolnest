@@ -250,9 +250,15 @@
       // Sidebar Theme Toggle Event Listener
       const adminThemeToggle = document.getElementById('admin-theme-toggle-btn');
       if (adminThemeToggle) {
+        function updateAdminThemeToggleIcon(isDark) {
+          adminThemeToggle.innerHTML = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+        updateAdminThemeToggleIcon(document.documentElement.classList.contains('dark-theme'));
+
         adminThemeToggle.addEventListener('click', () => {
           const isDark = document.documentElement.classList.toggle('dark-theme');
           localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          updateAdminThemeToggleIcon(isDark);
         });
       }
     });
