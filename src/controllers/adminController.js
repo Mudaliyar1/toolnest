@@ -291,8 +291,10 @@ async function purgeAllFiles(req, res) {
 
     await File.deleteMany({});
     await Workspace.deleteMany({});
+    await Visitor.deleteMany({});
+    await ToolUsage.deleteMany({});
 
-    return res.redirect(`${env.adminAccessPath}/processing?success=Successfully purged all database entries, workspaces, and Cloudinary storage.`);
+    return res.redirect(`${env.adminAccessPath}/processing?success=Successfully purged all database entries, workspaces, analytics, and Cloudinary storage.`);
   } catch (error) {
     return res.redirect(`${env.adminAccessPath}/processing?error=${encodeURIComponent(error.message)}`);
   }

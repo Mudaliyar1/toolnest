@@ -556,14 +556,23 @@ html.dark-theme .table {
   color: var(--text-main) !important;
 }
 
-html.dark-theme .table-light {
-  background-color: var(--bg-subtle) !important;
-  color: var(--text-dark) !important;
-}
-
 html.dark-theme .table th,
 html.dark-theme .table td {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
   border-color: var(--border-color) !important;
+}
+
+html.dark-theme .table-light,
+html.dark-theme .table thead th,
+html.dark-theme .table thead td {
+  background-color: var(--bg-subtle) !important;
+  color: var(--text-main) !important;
+}
+
+html.dark-theme .table-hover tbody tr:hover td {
+  background-color: var(--bg-subtle) !important;
+  color: var(--text-main) !important;
 }
 
 html.dark-theme ::placeholder {

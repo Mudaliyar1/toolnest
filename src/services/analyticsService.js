@@ -41,6 +41,26 @@ async function recordWorkspaceVisit(req) {
     return;
   }
 
+  // Filter out tester/admin views, local development, and bots
+  const ip = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || 'unknown';
+  const isLocal = ip.includes('127.0.0.1') || ip.includes('::1') || ip === 'localhost';
+  const isAdmin = (req.cookies && req.cookies['raisetool_admin_token']) || (req.originalUrl && req.originalUrl.startsWith('/admin'));
+  
+  const userAgent = String(req.headers['user-agent'] || '').toLowerCase();
+  const isBotOrTester = userAgent.includes('bot') || 
+                        userAgent.includes('crawler') || 
+                        userAgent.includes('spider') || 
+                        userAgent.includes('lighthouse') || 
+                        userAgent.includes('headless') || 
+                        userAgent.includes('puppeteer') || 
+                        userAgent.includes('playwright') || 
+                        userAgent.includes('selenium') ||
+                        userAgent.includes('antigravity');
+
+  if (isLocal || isAdmin || isBotOrTester) {
+    return; // Ignore and skip tracking for local test environments, admins, and crawlers
+  }
+
   const analytics = await Analytics.findOneAndUpdate(
     {},
     { $setOnInsert: { pageViews: 0, sessions: 0, bounceRate: 0, averageSessionDuration: 0 } },
