@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark-theme">
 
 <head>
   <% const resolvedSiteName=typeof siteName !=='undefined' ? siteName : 'RaiseTool' ; %>
@@ -22,8 +22,8 @@
           <script>
             (function() {
               const savedTheme = localStorage.getItem('theme');
-              if (savedTheme !== 'light') {
-                document.documentElement.classList.add('dark-theme');
+              if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark-theme');
               }
             })();
           </script>
