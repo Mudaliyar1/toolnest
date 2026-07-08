@@ -1,22 +1,69 @@
 <% layout('layouts/main') -%>
 <section class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
       <div class="card shadow-sm border-0">
         <div class="card-body p-4 p-lg-5">
-          <h1 class="h2 fw-semibold text-dark mb-4">Privacy Policy</h1>
-          <p class="text-secondary">Last updated: July 5, 2026</p>
+          <div class="mb-4">
+            <h1 class="h2 fw-semibold text-dark mb-1">Privacy Policy</h1>
+            <p class="text-secondary mb-0">Detailed overview of RaiseTool's privacy guarantees, data processing mechanics, and compliance metrics.</p>
+          </div>
+          <p class="text-secondary small">Last updated: July 5, 2026</p>
           <hr class="my-4">
-          <p class="text-secondary">At RaiseTool, we prioritize your privacy and data security. Below is a detailed overview of how we handle information:</p>
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">1. Anonymous Workspaces</h2>
-          <p class="text-secondary">We do not require account registration. When you access RaiseTool, we generate a temporary workspace session linked to a secure cryptographic token stored in a signed cookie. We do not link this session to your IP address or personal identity.</p>
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">2. File Retention</h2>
-          <p class="text-secondary">Any files uploaded or processed through RaiseTool are stored temporarily in isolated system directories. All uploaded files, processed files, and session metadata are strictly deleted after 10 minutes of inactivity via our automated database TTL and cleanup scheduler.</p>
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">3. Security Audits and Tracking</h2>
-          <p class="text-secondary">We monitor high-severity security events (such as rate-limiting triggers or input anomalies) using database logging to prevent denial of service (DoS) and abuse. IP addresses are hashed immediately to guarantee anonymity.</p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">1. Privacy by Design: Zero Account Retention</h2>
+          <p class="text-secondary">
+            RaiseTool is designed with a strict privacy-first model. We do not require accounts, usernames, email addresses, or social logins. When you access RaiseTool, we generate a temporary workspace session linked to an anonymous cryptographic token stored in a secure cookie. We do not collect, profile, or link your activities to your personal identity, device parameters, or IP addresses.
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">2. Hybrid File Storage & Security Details</h2>
+          <p class="text-secondary">
+            Our platform operates on a hybrid processing paradigm to keep your files secure:
+          </p>
+          <ul class="text-secondary">
+            <li class="mb-2">
+              <strong>Local Node Server Sandboxing:</strong> Most transformations (such as document mergers, code calculations, and system diagnostic operations) are processed locally inside temporary, isolated system folders on our servers. No third-party APIs have access to these files.
+            </li>
+            <li class="mb-2">
+              <strong>Cloudinary Cloud Synchronization:</strong> For files requiring remote access or workspace sharing, we securely synchronize assets to Cloudinary remote cloud storage using TLS 1.3 encryption. Files are stored as anonymized hashes (UUIDs), meaning they cannot be read or linked back to you without the unique session key.
+            </li>
+          </ul>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">3. The 10-Minute Cascade Deletion (TTL)</h2>
+          <p class="text-secondary">
+            We do not believe in keeping user data. To ensure absolute data safety:
+          </p>
+          <ul class="text-secondary">
+            <li class="mb-2">
+              An automated Database Time-to-Live (TTL) scheduler tracks your session activity.
+            </li>
+            <li class="mb-2">
+              If your session is idle for **10 minutes**, the system initiates a cascade delete.
+            </li>
+            <li class="mb-2">
+              This completely purges your temporary workspace data from our local folders, drops database sessions, and triggers remote API calls to remove any synced Cloudinary media instantly. Once deleted, this data cannot be recovered under any circumstances.
+            </li>
+          </ul>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">4. Cookies and Local Storage Configurations</h2>
+          <p class="text-secondary">
+            RaiseTool uses essential cookies and local storage parameters only:
+          </p>
+          <ul class="text-secondary small">
+            <li><strong>Session Cookie (HTTP-only):</strong> Authenticates access to your temporary workspace folder.</li>
+            <li><strong>CSRF Token Cookie:</strong> Prevents unauthorized cross-site scripting actions.</li>
+            <li><strong>Theme Value (Local Storage):</strong> Stores your UI style choice (<code>theme</code>) locally on your device.</li>
+          </ul>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">5. Regulatory Compliance & Global Rights (GDPR & CCPA)</h2>
+          <p class="text-secondary">
+            Because we do not collect personal data (names, emails, IPs, or location history), the rights to access, edit, or delete personal profiles under GDPR or CCPA do not apply. You have absolute control over your files: you can manually discard all uploaded files and session caches at any time by clicking "Clean Workspace" inside your active panel.
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">6. Security Audits & Logs</h2>
+          <p class="text-secondary">
+            We monitor high-severity system events (such as server errors, input validation failures, or request anomalies) to prevent abuse and block Denial of Service (DoS) attacks. All IP addresses recorded in these security logs are immediately hashed, guaranteeing anonymity.
+          </p>
         </div>
       </div>
     </div>

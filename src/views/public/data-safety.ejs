@@ -1,0 +1,157 @@
+<% layout('layouts/main') -%>
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-lg-5">
+          <div class="mb-4">
+            <h1 class="h2 fw-semibold text-dark mb-1">Data Safety & Lifecycle Policy</h1>
+            <p class="text-secondary mb-0">Detailed disclosure of file processing, hybrid Cloudinary sync, and automated erasure protocols.</p>
+          </div>
+          
+          <hr class="my-4">
+
+          <div class="alert alert-info border-0 p-3 mb-4">
+            <div class="small">
+              <strong>Zero-Persisted Data Guarantee:</strong> RaiseTool is engineered from the ground up to prevent persistent user tracking. All files and session details are processed inside isolated sandboxes and systematically deleted.
+            </div>
+          </div>
+
+          <h2 class="h4 fw-semibold text-dark mt-4 mb-3">1. Hybrid Storage Architecture</h2>
+          <p class="text-secondary">To provide both fast local transformations and collaborative workspaces, RaiseTool implements a secure hybrid storage engine:</p>
+          
+          <div class="row g-4 my-2">
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Local Server-Side Processing</h6>
+                <p class="text-secondary small mb-0">
+                  By default, files are uploaded to secure, isolated directories on our local node server. They are processed in memory or through private local CLI processes (like FFmpeg or Muhammara PDF engines). No external service ever gets access to these files.
+                </p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Remote Cloudinary Sync</h6>
+                <p class="text-secondary small mb-0">
+                  For tools requiring remote accessibility or collaborative active workspaces, files can be securely synchronized with Cloudinary cloud storage. This sync uses encrypted tokens. The files are labeled with anonymous hashes, preventing anyone from reading their content or determining their owner without the session key.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="h4 fw-semibold text-dark mt-4 mb-3">2. Processing Modes and File Lifecycles</h2>
+          <p class="text-secondary">Depending on the specific tool you select, RaiseTool processes files and data in one of four distinct modes. Here is exactly what happens to your files in each mode:</p>
+          
+          <div class="row g-4 my-2">
+            <!-- Browser-Only Mode -->
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Browser-Only Mode (Client-Side)</h6>
+                <p class="text-secondary small mb-2">
+                  <strong>How it processes:</strong> Runs entirely inside your browser's local sandbox (JavaScript memory).
+                </p>
+                <p class="text-secondary small mb-2">
+                  <strong>Where files go:</strong> Data never leaves your device and never touches any servers.
+                </p>
+                <p class="text-secondary small mb-0">
+                  <strong>What you see:</strong> Instant results, works 100% offline. Used for JSON tools, base64 encodes, and text transformations.
+                </p>
+              </div>
+            </div>
+
+            <!-- Server-Only Mode -->
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Server-Only Mode (Sandboxed Server)</h6>
+                <p class="text-secondary small mb-2">
+                  <strong>How it processes:</strong> Executed securely on our sandboxed Node.js server.
+                </p>
+                <p class="text-secondary small mb-2">
+                  <strong>Where files go:</strong> Written to a secure, private temp directory on the server.
+                </p>
+                <p class="text-secondary small mb-0">
+                  <strong>What you see:</strong> File processing queues. Files are deleted automatically after 10 minutes of session inactivity. Used for PDF tools and video processing.
+                </p>
+              </div>
+            </div>
+
+            <!-- Cloudinary Sync Mode -->
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Cloudinary Sync Mode (Cloud Persisted)</h6>
+                <p class="text-secondary small mb-2">
+                  <strong>How it processes:</strong> Assets are synchronized with remote Cloudinary cloud directories using cryptographic session tokens.
+                </p>
+                <p class="text-secondary small mb-2">
+                  <strong>Where files go:</strong> Stored securely as anonymized UUID hashes in the cloud.
+                </p>
+                <p class="text-secondary small mb-0">
+                  <strong>What you see:</strong> Workspace asset lists that persist across devices and reloads. Purged instantly when session expires (after 10 minutes of inactivity).
+                </p>
+              </div>
+            </div>
+
+            <!-- Hybrid Mode -->
+            <div class="col-md-6">
+              <div class="card bg-light border-0 h-100 p-4">
+                <h6 class="fw-bold text-dark mb-2">Hybrid Mode (Combined Pipeline)</h6>
+                <p class="text-secondary small mb-2">
+                  <strong>How it processes:</strong> Combines browser calculations with server tasks and remote Cloudinary persistence.
+                </p>
+                <p class="text-secondary small mb-2">
+                  <strong>Where files go:</strong> Stored locally during processing and pushed to the cloud for workspace sync.
+                </p>
+                <p class="text-secondary small mb-0">
+                  <strong>What you see:</strong> Combined workspace logs indicating client vs server tasks. Deleted completely after 10 minutes.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="h4 fw-semibold text-dark mt-4 mb-3">3. The 10-Minute Inactivity TTL Lifecycle</h2>
+          <p class="text-secondary">We enforce a strict data retention limit based on user activity. This is monitored by our database Time-To-Live (TTL) scheduler:</p>
+          
+          <div class="table-responsive my-3">
+            <table class="policy-table align-middle">
+              <thead>
+                <tr>
+                  <th>Phase / State</th>
+                  <th>Retention Details</th>
+                  <th>What the User Sees</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge-status badge-active">Active Session</span></td>
+                  <td>Files persist in local temp folders and (if synced) in Cloudinary. The session is renewed with every page navigation or file operation.</td>
+                  <td>The user sees all processed files, compression ratios, metrics, and download links in their Workspace.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge-status badge-idle">Idle State (1-9 Mins)</span></td>
+                  <td>Files remain intact. A background countdown runs silently waiting for new client inputs.</td>
+                  <td>Workspace stays open. A warning banner appears if the session is close to expiring.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge-status badge-expired">Expired Session</span></td>
+                  <td>The session cookie expires. The database triggers a cascade delete, removing the workspace entry, deleting the local temp folder, and purging all files from Cloudinary.</td>
+                  <td>The user is shown a clean slate on their next interaction ("Workspace Expired or Empty") and must start a new session.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="h4 fw-semibold text-dark mt-4 mb-3">4. Transport & Storage Security</h2>
+          <p class="text-secondary">All files are processed behind industrial-grade security layers:</p>
+          <ul class="text-secondary">
+            <li class="mb-2"><strong>SSL/TLS Encryption:</strong> All uploads and API calls are encrypted using TLS 1.3 protocol.</li>
+            <li class="mb-2"><strong>Filename Anonymization:</strong> Upon upload, files are immediately renamed to cryptographically secure UUIDs. The original filenames are stored in session cookies and are never written to server logs.</li>
+            <li class="mb-2"><strong>Sandbox Execution:</strong> Server-side utilities run inside isolated system scopes with restricted resource constraints, preventing unauthorized access.</li>
+          </ul>
+
+          <h2 class="h4 fw-semibold text-dark mt-4 mb-3">5. Offline Mode Handling</h2>
+          <p class="text-secondary">When RaiseTool is run inside the PWA standalone wrapper, client-side tools (like JSON tools or calculations) process all data completely offline on your device. During offline status, no data is sent to the server or Cloudinary. All local changes are stored in client memory and synced securely only when connection is restored.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,21 +1,67 @@
 <% layout('layouts/main') -%>
 <section class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
       <div class="card shadow-sm border-0">
         <div class="card-body p-4 p-lg-5">
-          <h1 class="h2 fw-semibold text-dark mb-4">Terms of Service</h1>
-          <p class="text-secondary">Last updated: July 5, 2026</p>
+          <div class="mb-4">
+            <h1 class="h2 fw-semibold text-dark mb-1">Terms of Service</h1>
+            <p class="text-secondary mb-0">Rules, conditions, and usage policies for the RaiseTool online utilities platform.</p>
+          </div>
+          <p class="text-secondary small">Last updated: July 5, 2026</p>
           <hr class="my-4">
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">1. Use of Services</h2>
-          <p class="text-secondary">RaiseTool provides temporary utilities for personal and commercial file transformation, utility calculations, and data processing. You must not use our platform for malicious purposes, copyright infringement, or hosting/transferring illegal material.</p>
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">2. Service Degradation and Liability</h2>
-          <p class="text-secondary">RaiseTool is provided "as is" without warranty. We do not persist any data and automatically discard all workspace elements after 10 minutes. We are not liable for files lost during processing or session expiration.</p>
-          
-          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">3. System Limits</h2>
-          <p class="text-secondary">To ensure high availability, RaiseTool enforces rate limits, slow-down middleware, and maximum payload restrictions (1MB for requests, and appropriate bounds for tool uploads). Requests exceeding bounds will be rejected automatically.</p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">1. Agreement to Terms</h2>
+          <p class="text-secondary">
+            By accessing and using RaiseTool, you agree to comply with and be bound by these Terms of Service. If you do not agree to these conditions, you must not use our online utilities, workspaces, or APIs.
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">2. Service Usage & Restraints</h2>
+          <p class="text-secondary">
+            RaiseTool provides temporary utility tools for file operations (conversions, compression, calculations). You agree to use these services only for lawful purposes. You are strictly prohibited from:
+          </p>
+          <ul class="text-secondary">
+            <li class="mb-2">Uploading files that contain viruses, trojans, worms, or any malicious script designed to degrade server performance.</li>
+            <li class="mb-2">Attempting to bypass platform rate limits or security sandboxes.</li>
+          </ul>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">3. Hybrid Storage and Data Retention Disclaimers</h2>
+          <p class="text-secondary">
+            Our platform operates on a hybrid data storage model:
+          </p>
+          <ul class="text-secondary small">
+            <li class="mb-2"><strong>Temporary local file systems:</strong> Uploads are written to local sandboxed folders.</li>
+            <li class="mb-2"><strong>Remote Cloudinary Sync:</strong> Some workflows synchronize files securely with remote Cloudinary cloud directories under cryptographic hashes.</li>
+            <li class="mb-2"><strong>10-Minute Deletion:</strong> All local and remote files, database entries, and active session tokens are completely deleted after **10 minutes of inactivity**.</li>
+          </ul>
+          <p class="text-secondary text-danger fw-semibold">
+            WARNING: We do not keep backups. Once your session is idle for 10 minutes, all processed files are deleted forever and cannot be retrieved. You must download your files immediately upon transformation.
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">4. Limitation of Liability</h2>
+          <p class="text-secondary">
+            RaiseTool is provided on an "as is" and "as available" basis. We make no warranties regarding accuracy, tool compatibility, server uptime, or file security. In no event shall RaiseTool, its developers, or its hosts be liable for any data loss, file corruption, session expiration, or system downtime resulting from your use of the platform.
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">5. Service Rate Limits & Payload Restrictions</h2>
+          <p class="text-secondary">
+            To ensure fair service quality for all users, we enforce the following restrictions:
+          </p>
+          <ul class="text-secondary small">
+            <li><strong>Payload Cap:</strong> Upload requests are capped at 1MB per request. Larger payloads will be rejected automatically.</li>
+            <li><strong>Rate Limiting:</strong> Endpoints are protected by rate-limiting and slow-down middleware. Excessive requests will trigger a temporary lockout.</li>
+            <li><strong>API Access:</strong> Direct programmatic API access is not permitted under the free tier without secure developer tokens.</li>
+          </ul>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">6. User Responsibility and Misuse</h2>
+          <p class="text-secondary">
+            RaiseTool operates as a neutral provider of digital file tools and utility calculation assets. We do not inspect, endorse, or claim ownership over user-uploaded content. You are solely responsible for ensuring that your use of our tools complies with all local, national, and international laws. You agree that RaiseTool carries no liability, responsibilities, or legal obligations for any illegal, unauthorized, or harmful activities conducted through our platform (including but not limited to the processing of copyright-infringing data, distribution of malicious software, or unauthorized data parsing).
+          </p>
+
+          <h2 class="h5 fw-semibold text-dark mt-4 mb-3">7. Modifications of Terms</h2>
+          <p class="text-secondary">
+            We reserve the right to modify these Terms of Service at any time. Any changes will be posted on this page with an updated timestamp. Your continued use of RaiseTool after changes are made constitutes your acceptance of the updated terms.
+          </p>
         </div>
       </div>
     </div>

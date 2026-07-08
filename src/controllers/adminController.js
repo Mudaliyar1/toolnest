@@ -576,6 +576,17 @@ async function renderPerformance(req, res) {
     }
   };
 
+  if (req.query.json === 'true') {
+    return res.json({
+      metrics,
+      recentUploads,
+      processedToday,
+      activeWorkspacesToday,
+      allTimeProcessed,
+      appDiagnostics
+    });
+  }
+
   res.render('admin/performance', {
     title: 'Server Performance Monitor | RaiseTool',
     admin: req.admin,

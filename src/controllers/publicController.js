@@ -78,12 +78,39 @@ function handleContactSubmit(req, res) {
   });
 }
 
+function renderCookies(req, res) {
+  res.render('public/cookies', {
+    title: 'Cookie Policy | RaiseTool',
+    workspace: req.workspace,
+    csrfToken: req.csrfToken()
+  });
+}
+
+function renderDisclaimer(req, res) {
+  res.render('public/disclaimer', {
+    title: 'Disclaimer & DMCA | RaiseTool',
+    workspace: req.workspace,
+    csrfToken: req.csrfToken()
+  });
+}
+
+function renderDataSafety(req, res) {
+  res.render('public/data-safety', {
+    title: 'Data Safety & Lifecycle | RaiseTool',
+    workspace: req.workspace,
+    csrfToken: req.csrfToken()
+  });
+}
+
 module.exports = {
   renderHome,
   renderCategories,
   renderCategory,
   renderPrivacy,
   renderTerms,
+  renderCookies,
+  renderDisclaimer,
+  renderDataSafety,
   renderContact,
   handleContactSubmit,
   renderAbout

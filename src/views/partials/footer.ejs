@@ -1,12 +1,57 @@
-<footer class="mt-auto py-4" style="background: rgba(248, 250, 252, 0.7); border-top: 1px solid rgba(226, 232, 240, 0.5); z-index: 1020;">
-  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 small text-secondary">
-    <p class="mb-0">&copy; <%= new Date().getFullYear() %> <%= siteName %>. All rights reserved. Professional multi-utility platform.</p>
-    <div class="d-flex gap-3">
-      <a href="/about" class="text-secondary text-decoration-none hover-indigo">About</a>
-      <a href="/contact" class="text-secondary text-decoration-none hover-indigo">Contact</a>
-      <a href="/privacy" class="text-secondary text-decoration-none hover-indigo">Privacy Policy</a>
-      <a href="/terms" class="text-secondary text-decoration-none hover-indigo">Terms of Service</a>
+<footer class="pt-5 pb-4 mt-auto" style="background: var(--header-bg); border-top: 1px solid var(--border-color); z-index: 1020;">
+  <div class="container">
+    <div class="row g-4 mb-4">
+      <!-- Brand & About -->
+      <div class="col-12 col-md-4">
+        <h5 class="fw-bold text-dark mb-3"><%= siteName %></h5>
+        <p class="small text-secondary mb-0" style="line-height: 1.6;">
+          RaiseTool is a premium, developer-first online utility workspace. We provide safe, client-server isolated tools to clean, format, transform, and optimize media files and text data.
+        </p>
+      </div>
+
+      <!-- Quick Nav -->
+      <div class="col-6 col-md-2">
+        <h6 class="fw-bold text-dark small text-uppercase mb-3" style="letter-spacing: 0.05em;">Explore</h6>
+        <ul class="list-unstyled d-flex flex-column gap-2 small">
+          <li><a href="/" class="text-secondary text-decoration-none hover-indigo">Home</a></li>
+          <li><a href="/categories" class="text-secondary text-decoration-none hover-indigo">Categories</a></li>
+          <li><a href="/workspace" class="text-secondary text-decoration-none hover-indigo">My Workspace</a></li>
+          <li><a href="/about" class="text-secondary text-decoration-none hover-indigo">About Us</a></li>
+        </ul>
+      </div>
+
+      <!-- Policies Nav -->
+      <div class="col-6 col-md-3">
+        <h6 class="fw-bold text-dark small text-uppercase mb-3" style="letter-spacing: 0.05em;">Legal & Privacy</h6>
+        <ul class="list-unstyled d-flex flex-column gap-2 small">
+          <li><a href="/privacy" class="text-secondary text-decoration-none hover-indigo">Privacy Policy</a></li>
+          <li><a href="/terms" class="text-secondary text-decoration-none hover-indigo">Terms of Service</a></li>
+          <li><a href="/cookies" class="text-secondary text-decoration-none hover-indigo">Cookie Policy</a></li>
+          <li><a href="/disclaimer" class="text-secondary text-decoration-none hover-indigo">DMCA Disclaimer</a></li>
+          <li><a href="/data-safety" class="text-secondary text-decoration-none hover-indigo">Data Safety & Lifecycle</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact & Help -->
+      <div class="col-12 col-md-3">
+        <h6 class="fw-bold text-dark small text-uppercase mb-3" style="letter-spacing: 0.05em;">Support</h6>
+        <ul class="list-unstyled d-flex flex-column gap-2 small">
+          <li><a href="/contact" class="text-secondary text-decoration-none hover-indigo">Contact Support</a></li>
+          <li><span class="text-secondary">Server Status: <strong>Online</strong></span></li>
+          <li><span class="text-secondary">Security TLS Encryption</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Copyright Divider line -->
+    <hr style="border-color: var(--border-color); opacity: 0.6; margin-bottom: 1.5rem;">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small text-secondary">
+      <p class="mb-0">&copy; <%= new Date().getFullYear() %> <%= siteName %>. All rights reserved. Professional multi-utility platform.</p>
+      <div class="d-flex gap-2">
+        <span class="badge bg-light text-primary border">Version 1.2.0</span>
+        <span class="badge bg-light text-success border">100% Secure</span>
+      </div>
     </div>
   </div>
 </footer>
-

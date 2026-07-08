@@ -7,6 +7,14 @@
   <meta name="theme-color" content="#0f172a">
   <link rel="stylesheet" href="/vendor/bootstrap.min.css">
   <link rel="stylesheet" href="/css/app.css">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme !== 'light') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    })();
+  </script>
   <style>
     :root {
       --sidebar-width: 260px;
@@ -16,7 +24,8 @@
       --sidebar-active-color: #f8fafc;
     }
     body {
-      background-color: #f8fafc;
+      background-color: var(--bg-main);
+      color: var(--text-main);
       min-height: 100vh;
       font-family: 'Inter', sans-serif;
     }
@@ -73,6 +82,7 @@
       padding: 2.5rem;
       min-height: 100vh;
       transition: all 0.3s ease;
+      min-width: 0;
     }
     .admin-mobile-header {
       display: none;
@@ -88,25 +98,56 @@
     
     @media (max-width: 991.98px) {
       .admin-sidebar {
-        margin-left: calc(-1 * var(--sidebar-width));
+        transform: translateX(-100%);
+        margin-left: 0 !important;
       }
       .admin-sidebar.show {
-        margin-left: 0;
+        transform: translateX(0);
       }
       .admin-content {
         margin-left: 0;
         padding: 1.25rem;
+        width: 100%;
+        overflow-x: hidden;
       }
       .admin-mobile-header {
         display: flex;
       }
     }
+
+    /* Modern mobile overlay backdrop */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      z-index: 998;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-backdrop.show {
+      display: block;
+    }
+    
+    html.dark-theme .admin-mobile-header {
+      background: var(--bg-card);
+      border-bottom-color: var(--border-color);
+    }
+    html.dark-theme .admin-mobile-header .text-dark {
+      color: var(--text-dark) !important;
+    }
   </style>
 </head>
 <body>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
   <div class="admin-mobile-header">
     <div class="d-flex align-items-center gap-2">
-      <span class="fs-4">⚡</span>
+      <span class="fs-4">🛠️</span>
       <span class="fw-bold text-dark">RaiseTool Admin</span>
     </div>
     <button class="btn btn-outline-secondary btn-sm" id="sidebar-toggle-btn">
@@ -118,7 +159,7 @@
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="sidebar-header">
-        <span class="fs-3">⚡</span>
+        <span class="fs-3">🛠️</span>
         <div>
           <div class="fw-bold text-white lh-sm">RaiseTool</div>
           <small class="text-secondary">Control Center</small>
@@ -144,6 +185,9 @@
 
       <div class="p-3 border-top border-secondary">
         <div class="d-flex flex-column gap-2">
+          <button id="admin-theme-toggle-btn" class="btn btn-outline-light btn-sm w-100 py-2 mb-1" style="border-radius: 50rem; font-weight: 600;">
+            🌓 Toggle Theme Mode
+          </button>
           <a href="/" class="btn btn-outline-light btn-sm w-100 py-2">
             🏠 Back to Site
           </a>
@@ -168,15 +212,47 @@
     document.addEventListener('DOMContentLoaded', () => {
       const toggleBtn = document.getElementById('sidebar-toggle-btn');
       const sidebar = document.getElementById('admin-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+
+      function showSidebar() {
+        sidebar.classList.add('show');
+        if (backdrop) backdrop.classList.add('show');
+      }
+
+      function hideSidebar() {
+        sidebar.classList.remove('show');
+        if (backdrop) backdrop.classList.remove('show');
+      }
+
       if (toggleBtn && sidebar) {
         toggleBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          sidebar.classList.toggle('show');
-        });
-        document.body.addEventListener('click', (e) => {
-          if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
-            sidebar.classList.remove('show');
+          if (sidebar.classList.contains('show')) {
+            hideSidebar();
+          } else {
+            showSidebar();
           }
+        });
+      }
+
+      if (backdrop) {
+        backdrop.addEventListener('click', () => {
+          hideSidebar();
+        });
+      }
+
+      document.body.addEventListener('click', (e) => {
+        if (sidebar && !sidebar.contains(e.target) && e.target !== toggleBtn) {
+          hideSidebar();
+        }
+      });
+
+      // Sidebar Theme Toggle Event Listener
+      const adminThemeToggle = document.getElementById('admin-theme-toggle-btn');
+      if (adminThemeToggle) {
+        adminThemeToggle.addEventListener('click', () => {
+          const isDark = document.documentElement.classList.toggle('dark-theme');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
       }
     });

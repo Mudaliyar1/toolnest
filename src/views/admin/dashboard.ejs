@@ -49,7 +49,7 @@
             <span class="text-uppercase small fw-semibold text-secondary d-block mb-1">Active Workspaces</span>
             <h3 class="fs-2 fw-bold text-success mb-0"><%= metrics.activeUsers %></h3>
           </div>
-          <div class="fs-1 text-success bg-light-success px-3 py-2 rounded-3">⚡</div>
+          <div class="fs-1 text-success bg-light-success px-3 py-2 rounded-3">💼</div>
         </div>
       </div>
     </div>
@@ -118,7 +118,7 @@
                     <span class="small text-dark font-monospace fw-bold"><%= item.count %> visits (<%= percentage %>%)</span>
                   </div>
                   <div class="progress" style="height: 6px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: <%= percentage %>%"></div>
+                    <div class="progress-bar bg-primary js-progress-bar" role="progressbar" data-width="<%= percentage %>%"></div>
                   </div>
                 </div>
               <% }) %>
@@ -147,7 +147,7 @@
                     <span class="small text-dark font-monospace fw-bold"><%= item.count %> visits (<%= percentage %>%)</span>
                   </div>
                   <div class="progress" style="height: 6px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: <%= percentage %>%"></div>
+                    <div class="progress-bar bg-info js-progress-bar" role="progressbar" data-width="<%= percentage %>%"></div>
                   </div>
                 </div>
               <% }) %>
@@ -174,7 +174,7 @@
                     <span class="small text-dark font-monospace fw-bold"><%= item.count %> (<%= percentage %>%)</span>
                   </div>
                   <div class="progress" style="height: 6px;">
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: <%= percentage %>%"></div>
+                    <div class="progress-bar bg-warning js-progress-bar" role="progressbar" data-width="<%= percentage %>%"></div>
                   </div>
                 </div>
               <% }) %>
@@ -230,12 +230,21 @@
   </div>
 </section>
 
+<!-- Hidden element storing serialized visits metrics data safely -->
+<div id="daily-visits-store" data-visits="<%= JSON.stringify(metrics.dailyVisits || []) %>" style="display: none;"></div>
+
 <!-- Import Chart.js from Whitelisted CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Safely inject backend daily traffic metrics data
-    const dailyData = <%- JSON.stringify(metrics.dailyVisits || []) %>;
+    // Initialize progress bar widths
+    document.querySelectorAll('.js-progress-bar').forEach(bar => {
+      bar.style.width = bar.getAttribute('data-width');
+    });
+
+    // Safely parse metrics from HTML storage attribute
+    const dataStore = document.getElementById('daily-visits-store');
+    const dailyData = dataStore ? JSON.parse(dataStore.getAttribute('data-visits')) : [];
     
     // Sort array in chronological order
     dailyData.sort((a, b) => new Date(a._id) - new Date(b._id));

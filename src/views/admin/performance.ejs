@@ -13,9 +13,9 @@
           Auto Refresh (5s) <span id="countdownTimer" class="badge bg-light text-primary ms-1">5</span>
         </label>
       </div>
-      <a href="" class="btn btn-primary btn-sm rounded-3 shadow-sm px-3 py-2 fw-semibold" id="refreshBtn">
+      <button class="btn btn-primary btn-sm rounded-3 shadow-sm px-3 py-2 fw-semibold" id="refreshBtn">
         🔄 Refresh Now
-      </a>
+      </button>
     </div>
   </div>
 
@@ -27,19 +27,19 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
               <p class="text-muted small fw-semibold text-uppercase mb-1">CPU Load</p>
-              <h3 class="fw-bold text-dark mb-0"><%= metrics.cpuLoadPercent %>%</h3>
+              <h3 class="fw-bold text-dark mb-0" id="cpu-load-val"><%= metrics.cpuLoadPercent %>%</h3>
             </div>
             <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
               💻
             </div>
           </div>
           <div class="progress rounded-pill mb-3" style="height: 6px;">
-            <div class="progress-bar bg-primary js-progress-bar" role="progressbar" data-width="<%= metrics.cpuLoadPercent %>%" aria-valuenow="<%= metrics.cpuLoadPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress-bar bg-primary js-progress-bar" id="cpu-load-bar" role="progressbar" data-width="<%= metrics.cpuLoadPercent %>%" aria-valuenow="<%= metrics.cpuLoadPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div class="d-flex justify-content-between text-secondary small">
-            <span>1m: <strong><%= metrics.cpuLoad1m %></strong></span>
-            <span>5m: <strong><%= metrics.cpuLoad5m %></strong></span>
-            <span>15m: <strong><%= metrics.cpuLoad15m %></strong></span>
+            <span>1m: <strong id="cpu-load-1m"><%= metrics.cpuLoad1m %></strong></span>
+            <span>5m: <strong id="cpu-load-5m"><%= metrics.cpuLoad5m %></strong></span>
+            <span>15m: <strong id="cpu-load-15m"><%= metrics.cpuLoad15m %></strong></span>
           </div>
         </div>
       </div>
@@ -52,19 +52,19 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
               <p class="text-muted small fw-semibold text-uppercase mb-1">Memory (RAM)</p>
-              <h3 class="fw-bold text-dark mb-0"><%= metrics.memoryPercent %>%</h3>
+              <h3 class="fw-bold text-dark mb-0" id="ram-percent-val"><%= metrics.memoryPercent %>%</h3>
             </div>
             <div class="bg-warning bg-opacity-10 text-warning p-2 rounded-3">
               💾
             </div>
           </div>
           <div class="progress rounded-pill mb-3" style="height: 6px;">
-            <div class="progress-bar bg-warning js-progress-bar" role="progressbar" data-width="<%= metrics.memoryPercent %>%" aria-valuenow="<%= metrics.memoryPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress-bar bg-warning js-progress-bar" id="ram-percent-bar" role="progressbar" data-width="<%= metrics.memoryPercent %>%" aria-valuenow="<%= metrics.memoryPercent %>" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div class="d-flex justify-content-between text-secondary small">
-            <span>Used: <strong><%= metrics.memoryUsed %> GB</strong></span>
-            <span>Free: <strong><%= metrics.memoryFree %> GB</strong></span>
-            <span>Total: <strong><%= metrics.memoryTotal %> GB</strong></span>
+            <span>Used: <strong id="ram-used-val"><%= metrics.memoryUsed %> GB</strong></span>
+            <span>Free: <strong id="ram-free-val"><%= metrics.memoryFree %> GB</strong></span>
+            <span>Total: <strong id="ram-total-val"><%= metrics.memoryTotal %> GB</strong></span>
           </div>
         </div>
       </div>
@@ -77,7 +77,7 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
               <p class="text-muted small fw-semibold text-uppercase mb-1">Node JS Heap Used</p>
-              <h3 class="fw-bold text-dark mb-0"><%= metrics.nodeHeapUsed %> MB</h3>
+              <h3 class="fw-bold text-dark mb-0" id="node-heap-val"><%= metrics.nodeHeapUsed %> MB</h3>
             </div>
             <div class="bg-success bg-opacity-10 text-success p-2 rounded-3">
               🟢
@@ -85,11 +85,11 @@
           </div>
           <div class="progress rounded-pill mb-3" style="height: 6px;">
             <% const heapPct = Math.min(100, Math.round((parseFloat(metrics.nodeHeapUsed) / parseFloat(metrics.nodeHeapTotal)) * 100)) || 0; %>
-            <div class="progress-bar bg-success js-progress-bar" role="progressbar" data-width="<%= heapPct %>%" aria-valuenow="<%= heapPct %>" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress-bar bg-success js-progress-bar" id="node-heap-bar" role="progressbar" data-width="<%= heapPct %>%" aria-valuenow="<%= heapPct %>" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div class="d-flex justify-content-between text-secondary small">
-            <span>Allocated: <strong><%= metrics.nodeHeapTotal %> MB</strong></span>
-            <span>RSS Weight: <strong><%= metrics.nodeRss %> MB</strong></span>
+            <span>Allocated: <strong id="node-heap-total"><%= metrics.nodeHeapTotal %> MB</strong></span>
+            <span>RSS Weight: <strong id="node-rss-val"><%= metrics.nodeRss %> MB</strong></span>
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
               <p class="text-muted small fw-semibold text-uppercase mb-1">HTTP Traffic & Speed</p>
-              <h3 class="fw-bold text-dark mb-0"><%= appDiagnostics.http.avgLatencyMs %> ms</h3>
+              <h3 class="fw-bold text-dark mb-0" id="http-latency-val"><%= appDiagnostics.http.avgLatencyMs %> ms</h3>
             </div>
             <div class="bg-info bg-opacity-10 text-info p-2 rounded-3">
               🌐
@@ -110,11 +110,11 @@
           </div>
           <div class="progress rounded-pill mb-3" style="height: 6px;">
             <% const latencyScore = Math.min(100, Math.round((parseFloat(appDiagnostics.http.avgLatencyMs) / 1000) * 100)) || 0; %>
-            <div class="progress-bar bg-info js-progress-bar" role="progressbar" data-width="<%= latencyScore %>%" aria-valuenow="<%= latencyScore %>" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress-bar bg-info js-progress-bar" id="http-latency-bar" role="progressbar" data-width="<%= latencyScore %>%" aria-valuenow="<%= latencyScore %>" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div class="d-flex justify-content-between text-secondary small">
-            <span>Total: <strong><%= appDiagnostics.http.totalRequests %> req</strong></span>
-            <span>Active: <strong><%= appDiagnostics.http.activeRequests %></strong></span>
+            <span>Total: <strong id="http-total-req"><%= appDiagnostics.http.totalRequests %> req</strong></span>
+            <span>Active: <strong id="http-active-req"><%= appDiagnostics.http.activeRequests %></strong></span>
           </div>
         </div>
       </div>
@@ -149,7 +149,6 @@
 
   <!-- Live Upload & Processing Activity Monitor -->
   <div class="row g-4 mb-4">
-    <!-- Live Platform Process Logs -->
     <div class="col-12">
       <div class="card border-0 shadow-sm rounded-3 bg-white">
         <div class="card-body p-4">
@@ -160,30 +159,30 @@
             </div>
             <div class="d-flex flex-wrap gap-2 mt-2 mt-sm-0">
               <span class="badge bg-light text-primary px-3 py-2 rounded-pill font-monospace small">
-                Today: <strong><%= processedToday %> files</strong>
+                Today: <strong id="feed-today-count"><%= processedToday %> files</strong>
               </span>
               <span class="badge bg-light text-success px-3 py-2 rounded-pill font-monospace small">
-                Active Workspaces: <strong><%= activeWorkspacesToday %></strong>
+                Active Workspaces: <strong id="feed-active-workspaces"><%= activeWorkspacesToday %></strong>
               </span>
               <span class="badge bg-light text-secondary px-3 py-2 rounded-pill font-monospace small">
-                Total Processed: <strong><%= allTimeProcessed %></strong>
+                Total Processed: <strong id="feed-all-time"><%= allTimeProcessed %></strong>
               </span>
             </div>
           </div>
 
-          <% if (recentUploads && recentUploads.length > 0) { %>
-            <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light sticky-top">
-                  <tr>
-                    <th>Original Filename</th>
-                    <th>Tool Applied</th>
-                    <th>Weight</th>
-                    <th>Destination</th>
-                    <th class="text-end">Processed Time</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th>Original Filename</th>
+                  <th>Tool Applied</th>
+                  <th>Weight</th>
+                  <th>Destination</th>
+                  <th class="text-end">Processed Time</th>
+                </tr>
+              </thead>
+              <tbody id="recent-uploads-tbody">
+                <% if (recentUploads && recentUploads.length > 0) { %>
                   <% recentUploads.forEach((file) => { %>
                     <tr>
                       <td class="text-dark fw-semibold text-truncate" style="max-width: 250px;">
@@ -214,15 +213,17 @@
                       </td>
                     </tr>
                   <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } else { %>
-            <div class="text-center py-5 text-secondary">
-              <span class="d-block mb-2 small">📡 Waiting for file processing events...</span>
-              <p class="mb-0 small text-muted">No files have been processed in this workspace session yet.</p>
-            </div>
-          <% } %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="5" class="text-center py-5 text-secondary">
+                      <span class="d-block mb-2 small">📡 Waiting for file processing events...</span>
+                      <p class="mb-0 small text-muted">No files have been processed in this workspace session yet.</p>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -239,7 +240,7 @@
               <tbody>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Database Connection Status</td>
-                  <td class="py-2">
+                  <td class="py-2" id="val-db-status">
                     <% if (appDiagnostics.dbStatus === 'Connected') { %>
                       <span class="badge bg-success bg-opacity-10 text-success fw-bold">● Connected</span>
                     <% } else { %>
@@ -249,31 +250,31 @@
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Database Name</td>
-                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.dbName %></td>
+                  <td class="font-monospace text-dark py-2" id="val-db-name"><%= appDiagnostics.dbName %></td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Database Endpoint</td>
-                  <td class="font-monospace text-muted small py-2"><%= appDiagnostics.dbHost %></td>
+                  <td class="font-monospace text-muted small py-2" id="val-db-endpoint"><%= appDiagnostics.dbHost %></td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Workspace Channels count</td>
-                  <td class="font-monospace fw-bold text-dark py-2"><%= appDiagnostics.counts.workspace %> documents</td>
+                  <td class="font-monospace fw-bold text-dark py-2" id="val-db-workspaces"><%= appDiagnostics.counts.workspace %> documents</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Processed Files count</td>
-                  <td class="font-monospace fw-bold text-dark py-2"><%= appDiagnostics.counts.file %> documents</td>
+                  <td class="font-monospace fw-bold text-dark py-2" id="val-db-files"><%= appDiagnostics.counts.file %> documents</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Tool Usage Analytics Logs</td>
-                  <td class="font-monospace fw-bold text-secondary py-2"><%= appDiagnostics.counts.toolUsage %> documents</td>
+                  <td class="font-monospace fw-bold text-secondary py-2" id="val-db-tool-usage"><%= appDiagnostics.counts.toolUsage %> documents</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Registered Admin Accounts</td>
-                  <td class="font-monospace fw-bold text-secondary py-2"><%= appDiagnostics.counts.admin %> accounts</td>
+                  <td class="font-monospace fw-bold text-secondary py-2" id="val-db-admins"><%= appDiagnostics.counts.admin %> accounts</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Visitor Traffic Sessions</td>
-                  <td class="font-monospace text-muted py-2"><%= appDiagnostics.counts.visitor %> sessions</td>
+                  <td class="font-monospace text-muted py-2" id="val-db-visitors"><%= appDiagnostics.counts.visitor %> sessions</td>
                 </tr>
               </tbody>
             </table>
@@ -292,13 +293,13 @@
               <tbody>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Storage Strategy</td>
-                  <td class="py-2">
+                  <td class="py-2" id="val-engine-strategy">
                     <span class="badge bg-primary text-uppercase px-2.5 py-1.5"><%= appDiagnostics.settings.storageStrategy %></span>
                   </td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Cloudinary Upload Connection</td>
-                  <td class="py-2">
+                  <td class="py-2" id="val-engine-cloudinary">
                     <% if (appDiagnostics.settings.cloudinaryEnabled) { %>
                       <span class="text-success small fw-semibold">Enabled</span>
                     <% } else { %>
@@ -308,29 +309,29 @@
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Cloudinary Processed Jobs</td>
-                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.settings.cloudinaryProcessedJobs %> uploads</td>
+                  <td class="font-monospace text-dark py-2" id="val-engine-cloudinary-jobs"><%= appDiagnostics.settings.cloudinaryProcessedJobs %> uploads</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">V8 Resident Set Size (RSS)</td>
-                  <td class="font-monospace text-dark fw-bold py-2"><%= metrics.nodeRss %> MB</td>
+                  <td class="font-monospace text-dark fw-bold py-2" id="val-engine-rss"><%= metrics.nodeRss %> MB</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">V8 Heap Allocations</td>
-                  <td class="font-monospace py-2">
+                  <td class="font-monospace py-2" id="val-engine-heap">
                     <span class="text-primary fw-bold"><%= metrics.nodeHeapUsed %> MB</span> / <span class="text-secondary"><%= metrics.nodeHeapTotal %> MB</span>
                   </td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Node Event Loop Active Handles</td>
-                  <td class="font-monospace text-dark py-2"><%= appDiagnostics.node.activeHandles %> handles</td>
+                  <td class="font-monospace text-dark py-2" id="val-engine-handles"><%= appDiagnostics.node.activeHandles %> handles</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Node Event Loop Active Requests</td>
-                  <td class="font-monospace text-secondary py-2"><%= appDiagnostics.node.activeRequests %> requests</td>
+                  <td class="font-monospace text-secondary py-2" id="val-engine-requests"><%= appDiagnostics.node.activeRequests %> requests</td>
                 </tr>
                 <tr>
                   <td class="text-secondary small fw-semibold py-2">Loaded Cached Node Modules</td>
-                  <td class="font-monospace text-muted py-2"><%= appDiagnostics.node.loadedModules %> modules</td>
+                  <td class="font-monospace text-muted py-2" id="val-engine-modules"><%= appDiagnostics.node.loadedModules %> modules</td>
                 </tr>
               </tbody>
             </table>
@@ -344,26 +345,162 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Initialize progress bar widths
-    document.querySelectorAll('.js-progress-bar').forEach(bar => {
-      bar.style.width = bar.getAttribute('data-width');
-    });
+    function updateProgressBars() {
+      document.querySelectorAll('.js-progress-bar').forEach(bar => {
+        bar.style.width = bar.getAttribute('data-width');
+      });
+    }
+    updateProgressBars();
 
     const autoRefreshCheck = document.getElementById('autoRefreshCheck');
     const countdownTimer = document.getElementById('countdownTimer');
+    const refreshBtn = document.getElementById('refreshBtn');
     let timeLeft = 5;
     let timerInterval = null;
+    let isFetching = false;
+
+    async function fetchMetrics() {
+      if (isFetching) return;
+      isFetching = true;
+      if (refreshBtn) refreshBtn.classList.add('disabled');
+
+      try {
+        const response = await fetch(window.location.pathname + '?json=true');
+        if (!response.ok) throw new Error('Response error');
+        const data = await response.json();
+        
+        // Update DOM elements reactively
+        document.getElementById('cpu-load-val').textContent = data.metrics.cpuLoadPercent + '%';
+        const cpuBar = document.getElementById('cpu-load-bar');
+        cpuBar.setAttribute('data-width', data.metrics.cpuLoadPercent + '%');
+        cpuBar.setAttribute('aria-valuenow', data.metrics.cpuLoadPercent);
+
+        document.getElementById('cpu-load-1m').textContent = data.metrics.cpuLoad1m;
+        document.getElementById('cpu-load-5m').textContent = data.metrics.cpuLoad5m;
+        document.getElementById('cpu-load-15m').textContent = data.metrics.cpuLoad15m;
+
+        document.getElementById('ram-percent-val').textContent = data.metrics.memoryPercent + '%';
+        const ramBar = document.getElementById('ram-percent-bar');
+        ramBar.setAttribute('data-width', data.metrics.memoryPercent + '%');
+        ramBar.setAttribute('aria-valuenow', data.metrics.memoryPercent);
+
+        document.getElementById('ram-used-val').textContent = data.metrics.memoryUsed + ' GB';
+        document.getElementById('ram-free-val').textContent = data.metrics.memoryFree + ' GB';
+        document.getElementById('ram-total-val').textContent = data.metrics.memoryTotal + ' GB';
+
+        document.getElementById('node-heap-val').textContent = data.metrics.nodeHeapUsed + ' MB';
+        const heapPct = Math.min(100, Math.round((parseFloat(data.metrics.nodeHeapUsed) / parseFloat(data.metrics.nodeHeapTotal)) * 100)) || 0;
+        const heapBar = document.getElementById('node-heap-bar');
+        heapBar.setAttribute('data-width', heapPct + '%');
+        heapBar.setAttribute('aria-valuenow', heapPct);
+
+        document.getElementById('node-heap-total').textContent = data.metrics.nodeHeapTotal + ' MB';
+        document.getElementById('node-rss-val').textContent = data.metrics.nodeRss + ' MB';
+
+        document.getElementById('http-latency-val').textContent = data.appDiagnostics.http.avgLatencyMs + ' ms';
+        const latencyScore = Math.min(100, Math.round((parseFloat(data.appDiagnostics.http.avgLatencyMs) / 1000) * 100)) || 0;
+        const latencyBar = document.getElementById('http-latency-bar');
+        latencyBar.setAttribute('data-width', latencyScore + '%');
+        latencyBar.setAttribute('aria-valuenow', latencyScore);
+
+        document.getElementById('http-total-req').textContent = data.appDiagnostics.http.totalRequests + ' req';
+        document.getElementById('http-active-req').textContent = data.appDiagnostics.http.activeRequests;
+
+        // Indicators
+        document.getElementById('feed-today-count').innerHTML = '<strong>' + data.processedToday + ' files</strong>';
+        document.getElementById('feed-active-workspaces').innerHTML = '<strong>' + data.activeWorkspacesToday + '</strong>';
+        document.getElementById('feed-all-time').innerHTML = '<strong>' + data.allTimeProcessed + '</strong>';
+
+        // Table Uploads
+        const tbody = document.getElementById('recent-uploads-tbody');
+        if (data.recentUploads && data.recentUploads.length > 0) {
+          let html = '';
+          data.recentUploads.forEach(file => {
+            const uploadTime = new Date(file.uploadTime);
+            const diff = Math.round((new Date() - uploadTime) / 1000);
+            let timeStr = '';
+            if (diff < 60) {
+              timeStr = '<span class="text-success fw-bold">Just now</span>';
+            } else if (diff < 3600) {
+              timeStr = Math.round(diff / 60) + ' mins ago';
+            } else {
+              timeStr = uploadTime.toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'});
+            }
+
+            const storageBadge = file.cloudinaryPublicId 
+              ? '<span class="badge bg-info bg-opacity-10 text-info">Cloudinary Storage</span>'
+              : '<span class="badge bg-secondary bg-opacity-10 text-secondary">Local Storage</span>';
+
+            html += `
+              <tr>
+                <td class="text-dark fw-semibold text-truncate" style="max-width: 250px;">${file.originalName}</td>
+                <td><span class="badge bg-light text-primary px-2.5 py-1.5">${file.toolName}</span></td>
+                <td class="font-monospace text-secondary small">${(file.fileSize / (1024 * 1024)).toFixed(2)} MB</td>
+                <td>${storageBadge}</td>
+                <td class="text-end text-muted small">${timeStr}</td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="text-center py-5 text-secondary">
+                <span class="d-block mb-2 small">📡 Waiting for file processing events...</span>
+                <p class="mb-0 small text-muted">No files have been processed in this workspace session yet.</p>
+              </td>
+            </tr>
+          `;
+        }
+
+        // DB Counts
+        const dbStatusBadge = data.appDiagnostics.dbStatus === 'Connected'
+          ? '<span class="badge bg-success bg-opacity-10 text-success fw-bold">● Connected</span>'
+          : '<span class="badge bg-danger bg-opacity-10 text-danger fw-bold">● ' + data.appDiagnostics.dbStatus + '</span>';
+        document.getElementById('val-db-status').innerHTML = dbStatusBadge;
+        document.getElementById('val-db-name').textContent = data.appDiagnostics.dbName;
+        document.getElementById('val-db-endpoint').textContent = data.appDiagnostics.dbHost;
+        document.getElementById('val-db-workspaces').textContent = data.appDiagnostics.counts.workspace + ' documents';
+        document.getElementById('val-db-files').textContent = data.appDiagnostics.counts.file + ' documents';
+        document.getElementById('val-db-tool-usage').textContent = data.appDiagnostics.counts.toolUsage + ' documents';
+        document.getElementById('val-db-admins').textContent = data.appDiagnostics.counts.admin + ' accounts';
+        document.getElementById('val-db-visitors').textContent = data.appDiagnostics.counts.visitor + ' sessions';
+
+        // Engine Details
+        document.getElementById('val-engine-strategy').innerHTML = `<span class="badge bg-primary text-uppercase px-2.5 py-1.5">${data.appDiagnostics.settings.storageStrategy}</span>`;
+        document.getElementById('val-engine-cloudinary').innerHTML = data.appDiagnostics.settings.cloudinaryEnabled
+          ? '<span class="text-success small fw-semibold">Enabled</span>'
+          : '<span class="text-danger small fw-semibold">Disabled</span>';
+        document.getElementById('val-engine-cloudinary-jobs').textContent = data.appDiagnostics.settings.cloudinaryProcessedJobs + ' uploads';
+        document.getElementById('val-engine-rss').textContent = data.metrics.nodeRss + ' MB';
+        document.getElementById('val-engine-heap').innerHTML = `<span class="text-primary fw-bold">${data.metrics.nodeHeapUsed} MB</span> / <span class="text-secondary">${data.metrics.nodeHeapTotal} MB</span>`;
+        document.getElementById('val-engine-handles').textContent = data.appDiagnostics.node.activeHandles + ' handles';
+        document.getElementById('val-engine-requests').textContent = data.appDiagnostics.node.activeRequests + ' requests';
+        document.getElementById('val-engine-modules').textContent = data.appDiagnostics.node.loadedModules + ' modules';
+
+        // Trigger transition widths
+        updateProgressBars();
+      } catch (err) {
+        console.error('[Auto-Refresh] Failed queries:', err);
+      } finally {
+        isFetching = false;
+        if (refreshBtn) refreshBtn.classList.remove('disabled');
+      }
+    }
 
     function startTimer() {
       if (timerInterval) clearInterval(timerInterval);
       timeLeft = 5;
       countdownTimer.textContent = timeLeft;
 
-      timerInterval = setInterval(() => {
+      timerInterval = setInterval(async () => {
         if (!autoRefreshCheck.checked) return;
         timeLeft--;
         countdownTimer.textContent = timeLeft;
         if (timeLeft <= 0) {
-          window.location.reload();
+          timeLeft = 5;
+          countdownTimer.textContent = timeLeft;
+          await fetchMetrics();
         }
       }, 1000);
     }
@@ -376,6 +513,16 @@
         countdownTimer.textContent = '-';
       }
     });
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await fetchMetrics();
+        if (autoRefreshCheck.checked) {
+          startTimer();
+        }
+      });
+    }
 
     startTimer();
   });
