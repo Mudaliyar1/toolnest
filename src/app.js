@@ -39,6 +39,8 @@ app.use(helmet({
       workerSrc: ["'self'", "blob:"],
       imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       mediaSrc: ["'self'", 'blob:'],
+      frameSrc: ["'self'", "blob:"],
+      childSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", 'data:', "https://fonts.gstatic.com"],
       connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       frameAncestors: ["'none'"]

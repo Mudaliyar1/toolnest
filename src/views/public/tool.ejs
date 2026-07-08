@@ -617,14 +617,63 @@
                                                                             <% } %>
 
                                                                               <% if (slug==='add-watermark' ) { %>
+                                                                                <div class="col-md-6 mb-3">
+                                                                                  <label class="form-label fw-semibold text-main">Watermark Text Overlay</label>
+                                                                                  <input type="text" name="watermark" class="form-control bg-transparent border text-main" placeholder="e.g. DRAFT / CONFIDENTIAL" value="CONFIDENTIAL" required>
+                                                                                </div>
+                                                                                <div class="col-md-6 mb-3">
+                                                                                  <label class="form-label fw-semibold text-main">Watermark Color</label>
+                                                                                  <select name="color" class="form-select bg-transparent border text-main">
+                                                                                    <option value="gray" selected>Gray</option>
+                                                                                    <option value="black">Black</option>
+                                                                                    <option value="red">Red (Urgent)</option>
+                                                                                    <option value="blue">Blue (Corporate)</option>
+                                                                                    <option value="green">Green (Approved)</option>
+                                                                                  </select>
+                                                                                </div>
+                                                                                <div class="col-md-4 mb-3">
+                                                                                  <label class="form-label fw-semibold text-main">Font Size</label>
+                                                                                  <select name="fontSize" class="form-select bg-transparent border text-main">
+                                                                                    <option value="16">16 px (Small)</option>
+                                                                                    <option value="24">24 px</option>
+                                                                                    <option value="36" selected>36 px (Medium)</option>
+                                                                                    <option value="48">48 px</option>
+                                                                                    <option value="60">60 px</option>
+                                                                                    <option value="72">72 px (Large)</option>
+                                                                                    <option value="96">96 px (Extra Large)</option>
+                                                                                  </select>
+                                                                                </div>
+                                                                                <div class="col-md-4 mb-3">
+                                                                                  <label class="form-label fw-semibold text-main">Watermark Style (Angle)</label>
+                                                                                  <select name="style" class="form-select bg-transparent border text-main">
+                                                                                    <option value="diagonal" selected>Cross / Diagonal (45°)</option>
+                                                                                    <option value="horizontal">Horizontal (0°)</option>
+                                                                                    <option value="vertical">Vertical (90°)</option>
+                                                                                    <option value="diagonal-opposite">Opposite Diagonal (-45°)</option>
+                                                                                  </select>
+                                                                                </div>
+                                                                                <div class="col-md-4 mb-3">
+                                                                                  <label class="form-label fw-semibold text-main">Position</label>
+                                                                                  <select name="position" class="form-select bg-transparent border text-main">
+                                                                                    <option value="center" selected>Center</option>
+                                                                                    <option value="top-left">Top Left</option>
+                                                                                    <option value="top-right">Top Right</option>
+                                                                                    <option value="bottom-left">Bottom Left</option>
+                                                                                    <option value="bottom-right">Bottom Right</option>
+                                                                                    <option value="top-center">Top Center</option>
+                                                                                    <option value="bottom-center">Bottom Center</option>
+                                                                                  </select>
+                                                                                </div>
                                                                                 <div class="col-md-12">
-                                                                                  <label
-                                                                                    class="form-label fw-semibold">Watermark
-                                                                                    Text Overlay</label>
-                                                                                  <input type="text" name="watermark"
-                                                                                    class="form-control"
-                                                                                    placeholder="e.g. DRAFT / CONFIDENTIAL"
-                                                                                    required>
+                                                                                  <label class="form-label fw-semibold text-main">Opacity Level</label>
+                                                                                  <select name="opacity" class="form-select bg-transparent border text-main">
+                                                                                    <option value="0.10">10% Opacity (Very Subtle)</option>
+                                                                                    <option value="0.18" selected>18% Opacity (Recommended)</option>
+                                                                                    <option value="0.30">30% Opacity</option>
+                                                                                    <option value="0.50">50% Opacity (Semi-Transparent)</option>
+                                                                                    <option value="0.75">75% Opacity</option>
+                                                                                    <option value="1.00">100% Opacity (Fully Opaque)</option>
+                                                                                  </select>
                                                                                 </div>
                                                                                 <% } %>
 
@@ -1804,3 +1853,138 @@
     </div>
 
     <script src="/js/tool.js" defer></script>
+
+    <% if (slug === 'add-watermark') { %>
+      <!-- Load PDF-Lib for Client-Side Dynamic Live Watermark Preview -->
+      <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const fileInput = document.getElementById('media-file-input');
+          const thumbnailWrapper = document.getElementById('preview-thumbnail-wrapper');
+          
+          const watermarkInput = document.querySelector('input[name="watermark"]');
+          const colorSelect = document.querySelector('select[name="color"]');
+          const fontSizeSelect = document.querySelector('select[name="fontSize"]');
+          const styleSelect = document.querySelector('select[name="style"]');
+          const positionSelect = document.querySelector('select[name="position"]');
+          const opacitySelect = document.querySelector('select[name="opacity"]');
+    
+          let currentBlobUrl = null;
+    
+          async function updateWatermarkPreview() {
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf') return;
+    
+            try {
+              const fileBytes = await file.arrayBuffer();
+              const pdfDoc = await PDFLib.PDFDocument.load(fileBytes);
+              const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+              
+              const text = watermarkInput.value || 'CONFIDENTIAL';
+              const size = Number(fontSizeSelect.value || 36);
+              const opacity = Number(opacitySelect.value || 0.18);
+              
+              let angle = 45;
+              const styleVal = styleSelect.value;
+              if (styleVal === 'horizontal') angle = 0;
+              else if (styleVal === 'vertical') angle = 90;
+              else if (styleVal === 'diagonal-opposite') angle = -45;
+    
+              let textColor = PDFLib.rgb(0.4, 0.4, 0.4);
+              const colorVal = colorSelect.value;
+              if (colorVal === 'black') textColor = PDFLib.rgb(0, 0, 0);
+              else if (colorVal === 'red') textColor = PDFLib.rgb(0.9, 0.1, 0.1);
+              else if (colorVal === 'blue') textColor = PDFLib.rgb(0.1, 0.3, 0.8);
+              else if (colorVal === 'green') textColor = PDFLib.rgb(0.1, 0.6, 0.2);
+    
+              const textWidth = font.widthOfTextAtSize(text, size);
+              const textHeight = size;
+    
+              const pages = pdfDoc.getPages();
+              // Watermark all pages so user can preview any page they scroll to
+              pages.forEach((page) => {
+                let x = page.getWidth() / 2;
+                let y = page.getHeight() / 2;
+                
+                const pos = positionSelect.value || 'center';
+                if (pos === 'center') {
+                  if (angle === 45 || angle === -45) {
+                    x = page.getWidth() / 2 - (textWidth / 2) * Math.cos(Math.PI / 4);
+                    y = page.getHeight() / 2 - (textWidth / 2) * Math.sin(Math.PI / 4);
+                  } else {
+                    x = page.getWidth() / 2 - textWidth / 2;
+                    y = page.getHeight() / 2 - textHeight / 2;
+                  }
+                } else if (pos === 'top-left') {
+                  x = 40;
+                  y = page.getHeight() - textHeight - 40;
+                } else if (pos === 'top-right') {
+                  x = page.getWidth() - textWidth - 40;
+                  y = page.getHeight() - textHeight - 40;
+                } else if (pos === 'bottom-left') {
+                  x = 40;
+                  y = 40;
+                } else if (pos === 'bottom-right') {
+                  x = page.getWidth() - textWidth - 40;
+                  y = 40;
+                } else if (pos === 'top-center') {
+                  x = page.getWidth() / 2 - textWidth / 2;
+                  y = page.getHeight() - textHeight - 40;
+                } else if (pos === 'bottom-center') {
+                  x = page.getWidth() / 2 - textWidth / 2;
+                  y = 40;
+                }
+    
+                page.drawText(text, {
+                  x,
+                  y,
+                  size,
+                  font: font,
+                  color: textColor,
+                  opacity,
+                  rotate: PDFLib.degrees(angle)
+                });
+              });
+    
+              const pdfBytes = await pdfDoc.save();
+              const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+              
+              if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+              }
+              currentBlobUrl = URL.createObjectURL(blob);
+              
+              // Inject or update iframe src in preview card
+              let iframe = thumbnailWrapper.querySelector('iframe');
+              if (!iframe) {
+                thumbnailWrapper.innerHTML = `
+                  <div class="w-100 h-100" style="min-height: 450px; border-radius: var(--radius-lg); overflow: hidden; background: #e2e8f0;">
+                    <iframe src="${currentBlobUrl}#toolbar=0&navpanes=0" width="100%" height="450px" style="border: none;"></iframe>
+                  </div>
+                `;
+              } else {
+                iframe.src = `${currentBlobUrl}#toolbar=0&navpanes=0`;
+              }
+            } catch (err) {
+              console.error('[Watermark Preview] Error generating live watermark:', err);
+            }
+          }
+    
+          // Hook events
+          if (fileInput) {
+            // Wait a split second after tool.js runs to bind and intercept
+            fileInput.addEventListener('change', () => {
+              setTimeout(updateWatermarkPreview, 150);
+            });
+          }
+    
+          [watermarkInput, colorSelect, fontSizeSelect, styleSelect, positionSelect, opacitySelect].forEach(control => {
+            if (control) {
+              control.addEventListener('input', updateWatermarkPreview);
+              control.addEventListener('change', updateWatermarkPreview);
+            }
+          });
+        });
+      </script>
+    <% } %>

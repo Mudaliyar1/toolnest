@@ -174,10 +174,10 @@
             audio.className = 'w-100 px-3';
             thumbnailWrapper.appendChild(audio);
           } else if (file.type === 'application/pdf' && thumbnailWrapper) {
+            const fileUrl = URL.createObjectURL(file);
             thumbnailWrapper.innerHTML = `
-              <div class="text-danger d-flex flex-column align-items-center gap-2">
-                <span style="font-size: 5rem; line-height: 1;">📄</span>
-                <span class="badge bg-danger">PDF Document</span>
+              <div class="w-100 h-100" style="min-height: 450px; border-radius: var(--radius-lg); overflow: hidden; background: #e2e8f0;">
+                <iframe src="${fileUrl}#toolbar=0&navpanes=0" width="100%" height="450px" style="border: none;"></iframe>
               </div>
             `;
           } else if (thumbnailWrapper) {

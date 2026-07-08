@@ -773,3 +773,50 @@ html.dark-theme .list-group-item-action:focus {
 html.dark-theme .list-group-item-action:hover .text-dark {
   color: var(--text-main) !important;
 }
+
+/* Modal dark theme overrides */
+html.dark-theme .modal-content {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+html.dark-theme .modal-header,
+html.dark-theme .modal-footer {
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+html.dark-theme .modal-title {
+  color: var(--text-main) !important;
+}
+html.dark-theme .modal-body {
+  color: var(--text-main) !important;
+}
+html.dark-theme .modal-body .text-dark {
+  color: var(--text-main) !important;
+}
+html.dark-theme .btn-close {
+  filter: invert(1) grayscale(1) brightness(2) !important;
+}
+
+/* Form select dark theme overrides */
+html.dark-theme select option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+}
+html.dark-theme .form-select {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+html.dark-theme .form-control {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+html.dark-theme .form-control:focus,
+html.dark-theme .form-select:focus {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25) !important;
+}

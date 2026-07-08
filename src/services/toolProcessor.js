@@ -909,14 +909,64 @@ async function processPdfTool(slug, files, body, outputDir) {
       const font = await pdfSource.embedFont(StandardFonts.Helvetica);
       pdfSource.getPages().forEach((page, index) => {
         if (slug === 'add-watermark') {
-          page.drawText(String(body.watermark || 'RaiseTool'), {
-            x: 40,
-            y: page.getHeight() / 2,
-            size: 36,
+          const text = String(body.watermark || 'CONFIDENTIAL');
+          const size = Number(body.fontSize || 36);
+          const opacity = Number(body.opacity || 0.18);
+
+          let angle = 45;
+          if (body.style === 'horizontal') angle = 0;
+          else if (body.style === 'vertical') angle = 90;
+          else if (body.style === 'diagonal-opposite') angle = -45;
+
+          let textColor = rgb(0.4, 0.4, 0.4);
+          if (body.color === 'black') textColor = rgb(0, 0, 0);
+          else if (body.color === 'red') textColor = rgb(0.9, 0.1, 0.1);
+          else if (body.color === 'blue') textColor = rgb(0.1, 0.3, 0.8);
+          else if (body.color === 'green') textColor = rgb(0.1, 0.6, 0.2);
+
+          const textWidth = font.widthOfTextAtSize(text, size);
+          const textHeight = size;
+
+          let x = page.getWidth() / 2;
+          let y = page.getHeight() / 2;
+
+          const pos = body.position || 'center';
+          if (pos === 'center') {
+            if (angle === 45 || angle === -45) {
+              x = page.getWidth() / 2 - (textWidth / 2) * Math.cos(Math.PI / 4);
+              y = page.getHeight() / 2 - (textWidth / 2) * Math.sin(Math.PI / 4);
+            } else {
+              x = page.getWidth() / 2 - textWidth / 2;
+              y = page.getHeight() / 2 - textHeight / 2;
+            }
+          } else if (pos === 'top-left') {
+            x = 40;
+            y = page.getHeight() - textHeight - 40;
+          } else if (pos === 'top-right') {
+            x = page.getWidth() - textWidth - 40;
+            y = page.getHeight() - textHeight - 40;
+          } else if (pos === 'bottom-left') {
+            x = 40;
+            y = 40;
+          } else if (pos === 'bottom-right') {
+            x = page.getWidth() - textWidth - 40;
+            y = 40;
+          } else if (pos === 'top-center') {
+            x = page.getWidth() / 2 - textWidth / 2;
+            y = page.getHeight() - textHeight - 40;
+          } else if (pos === 'bottom-center') {
+            x = page.getWidth() / 2 - textWidth / 2;
+            y = 40;
+          }
+
+          page.drawText(text, {
+            x,
+            y,
+            size,
             font,
-            color: rgb(0.4, 0.4, 0.4),
-            opacity: 0.18,
-            rotate: { type: 'degrees', angle: 45 }
+            color: textColor,
+            opacity,
+            rotate: { type: 'degrees', angle }
           });
         }
         if (slug === 'pdf-page-numbering') {
