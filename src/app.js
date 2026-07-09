@@ -36,7 +36,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
-      workerSrc: ["'self'", "blob:"],
+      workerSrc: ["'self'", "blob:", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       mediaSrc: ["'self'", 'blob:'],
       frameSrc: ["'self'", "blob:"],

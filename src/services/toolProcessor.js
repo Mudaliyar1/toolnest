@@ -545,8 +545,34 @@ async function loadPdfSafely(filePath, password) {
 }
 
 async function processPdfTool(slug, files, body, outputDir) {
+  if (slug === 'image-to-pdf') {
+    const doc = await PDFDocument.create();
+    for (const imageFile of files) {
+      const buffer = await fs.readFile(imageFile.path);
+      const imgSharp = sharp(buffer);
+      const metadata = await imgSharp.metadata();
+      
+      let imgBuffer;
+      let isPng = false;
+      if (metadata.format === 'png') {
+        imgBuffer = await imgSharp.png().toBuffer();
+        isPng = true;
+      } else {
+        imgBuffer = await imgSharp.jpeg({ quality: 90 }).toBuffer();
+      }
+
+      const image = isPng ? await doc.embedPng(imgBuffer) : await doc.embedJpg(imgBuffer);
+      const page = doc.addPage([image.width, image.height]);
+      page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+    }
+    const fileName = createStorageName('images-to-pdf.pdf', '.pdf');
+    const filePath = path.join(outputDir, fileName);
+    await fs.writeFile(filePath, await doc.save({ useObjectStreams: true }));
+    return { kind: 'file', title: 'Image to PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
+  }
+
   const pdfFiles = files.filter((file) => file.mimetype === 'application/pdf');
-  if (!pdfFiles.length && slug !== 'image-to-pdf') {
+  if (!pdfFiles.length) {
     throw new Error('A PDF file is required.');
   }
 
@@ -581,23 +607,7 @@ async function processPdfTool(slug, files, body, outputDir) {
   }
 
   if (slug === 'pdf-to-image') {
-    const doc = await loadPdfSafely(pdfFiles[0].path, body.password);
-    const firstPage = doc.getPages()[0];
-    const { width, height } = firstPage ? firstPage.getSize() : { width: 600, height: 800 };
-    
-    const fileName = createStorageName('pdf-preview.png', '.png');
-    const filePath = path.join(outputDir, fileName);
-    await sharp({
-      create: {
-        width: Math.round(width) || 600,
-        height: Math.round(height) || 800,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      }
-    })
-    .png()
-    .toFile(filePath);
-    return { kind: 'file', title: 'PDF Preview Image', files: [{ path: filePath, name: fileName, mimeType: 'image/png' }] };
+    throw new Error('PDF to Image conversion requires browser-side processing. Please ensure JavaScript is enabled in your browser and you do not reload the POST route directly.');
   }
 
   if (slug === 'merge-pdf') {
@@ -990,20 +1000,6 @@ async function processPdfTool(slug, files, body, outputDir) {
     }
   }
 
-  if (slug === 'image-to-pdf') {
-    const doc = await PDFDocument.create();
-    for (const imageFile of files) {
-      const buffer = await fs.readFile(imageFile.path);
-      const image = imageFile.mimetype === 'image/png' ? await doc.embedPng(buffer) : await doc.embedJpg(buffer);
-      const page = doc.addPage([image.width, image.height]);
-      page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-    }
-    const fileName = createStorageName('images-to-pdf.pdf', '.pdf');
-    const filePath = path.join(outputDir, fileName);
-    await fs.writeFile(filePath, await doc.save({ useObjectStreams: true }));
-    return { kind: 'file', title: 'Image to PDF', files: [{ path: filePath, name: fileName, mimeType: 'application/pdf' }] };
-  }
-
   throw new Error('This PDF tool is not wired yet.');
 }
 
@@ -1269,7 +1265,7 @@ async function executeTool({ slug, body, files, workspaceId, workspaceOutputDir 
     return processImageTool(slug, files[0], body, outputDir);
   }
 
-  if (slug.endsWith('-pdf') || slug === 'extract-pages' || slug === 'delete-pages' || slug === 'add-watermark' || slug === 'pdf-page-numbering' || slug === 'image-to-pdf' || slug === 'reorder-pages') {
+  if (slug.endsWith('-pdf') || slug === 'pdf-to-image' || slug === 'extract-pages' || slug === 'delete-pages' || slug === 'add-watermark' || slug === 'pdf-page-numbering' || slug === 'image-to-pdf' || slug === 'reorder-pages') {
     return processPdfTool(slug, files, body, outputDir);
   }
 

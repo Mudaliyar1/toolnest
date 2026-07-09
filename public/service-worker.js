@@ -87,8 +87,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Bypass cache completely for dynamic workspace/admin API/fetch requests
-  if (isDynamicRoute) {
+  // Bypass cache completely for dynamic workspace/admin API/fetch requests and vendor libraries
+  if (isDynamicRoute || url.pathname.startsWith('/vendor/')) {
     event.respondWith(fetch(event.request));
     return;
   }

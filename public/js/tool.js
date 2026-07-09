@@ -264,8 +264,14 @@
       if (submitBtn) submitBtn.disabled = true;
 
       const startTime = Date.now();
+      const csrfTokenInput = document.querySelector('input[name="_csrf"]');
+      const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+
       const xhr = new XMLHttpRequest();
       xhr.open('POST', form.action, true);
+      if (csrfToken) {
+        xhr.setRequestHeader('x-csrf-token', csrfToken);
+      }
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -346,8 +352,8 @@
     // Intercept form submission
     if (form) {
       form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent default synchronously to bypass async event loop race
         if (config.method === 'disabled') {
-          e.preventDefault();
           alert('Tool processing is temporarily disabled by the administrator.');
           return;
         }
@@ -412,7 +418,7 @@
         }
 
         // BROWSER ONLY EXECUTION DISPATCHER
-        if (config.method === 'browser') {
+        if (config.method === 'browser' || slug === 'pdf-to-image') {
           e.preventDefault();
           if (submitBtn) submitBtn.disabled = true;
           if (validationErrorEl) validationErrorEl.classList.add('d-none');
@@ -425,9 +431,29 @@
             const files = fileInput ? Array.from(fileInput.files || []) : [];
             showProcessingModal('browser');
             await runBrowserProcessing(slug, formData, files);
+            const isFfmpegTool = slug.startsWith('video-') || slug.startsWith('audio-') || slug === 'gif-to-video' || slug === 'mp3-cutter';
+            if (!isFfmpegTool && processingModal) {
+              processingModal.hide();
+            }
           } catch (error) {
-            console.error('Browser execution failed, falling back to server:', error);
-            if (error.message === '__FALLBACK_TO_SERVER__') return; // handled
+            console.error('Browser execution failed:', error);
+            if (error && error.message === '__FALLBACK_TO_SERVER__') return; // handled
+
+            if (slug === 'pdf-to-image') {
+              let details = 'Unknown error';
+              if (error) {
+                if (error instanceof Error) {
+                  details = `${error.name}: ${error.message}\n${error.stack}`;
+                } else if (error instanceof Event || (error.target && error.type === 'error')) {
+                  details = `Resource loading failed: "${error.target ? (error.target.src || error.target.href || 'unknown') : 'unknown'}"`;
+                } else {
+                  details = typeof error === 'object' ? JSON.stringify(error) : String(error);
+                }
+              }
+              errorProcessingModal(`PDF to Image Conversion failed: ${details}`);
+              if (submitBtn) submitBtn.disabled = false;
+              return;
+            }
 
             // Silently fall back to server processing!
             submitFormToServer();
@@ -552,7 +578,78 @@
     // Main Browser-Side Operations Dispatcher
     async function runBrowserProcessing(slug, formData, files) {
       // PDF Tools
-      if (slug === 'merge-pdf') {
+      if (slug === 'pdf-to-image') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const file = files[0];
+        
+        let lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (!lib) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/pdfjs/pdf.min.js';
+            script.onload = () => {
+              lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+              if (lib) {
+                lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+              }
+              resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        } else {
+          lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+        }
+        
+        if (typeof JSZip === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/jszip/jszip.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const pdf = await loadingTask.promise;
+        const totalPages = pdf.numPages;
+
+        const zip = new JSZip();
+        
+        const progressEl = document.getElementById('browser-modal-progress-bar');
+        const statusEl = document.getElementById('browser-modal-status');
+
+        for (let i = 1; i <= totalPages; i++) {
+          if (statusEl) statusEl.textContent = `Converting page ${i} of ${totalPages}...`;
+          if (progressEl) progressEl.style.width = `${Math.round((i / totalPages) * 100)}%`;
+
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 });
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const context = canvas.getContext('2d');
+          
+          // Paint background white (default background for PDFs)
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          
+          await page.render({ canvasContext: context, viewport }).promise;
+          
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          zip.file(`page-${i}.png`, blob);
+        }
+
+        if (statusEl) statusEl.textContent = `Packaging images into ZIP file...`;
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        
+        const zipName = `${file.name.replace(/\.pdf$/i, '')}_images.zip`;
+        showBrowserFileResult(zipName, URL.createObjectURL(zipBlob), zipBlob.size);
+      }
+      else if (slug === 'merge-pdf') {
         if (files.length < 2) throw new Error('Please select at least 2 PDF files.');
         const mergedPdf = await PDFLib.PDFDocument.create();
         for (const file of files) {

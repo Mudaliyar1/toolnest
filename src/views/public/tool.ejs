@@ -105,6 +105,10 @@
                   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
                     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
                   <% } %>
+                        <% if (tool.slug==='pdf-to-image' ) { %>
+                          <script src="/vendor/pdfjs/pdf.min.js"></script>
+                          <script src="/vendor/jszip/jszip.min.js"></script>
+                          <% } %>
                     <% if (tool.slug==='qr-generator' ) { %>
                       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
                         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -1852,7 +1856,7 @@
       </div>
     </div>
 
-    <script src="/js/tool.js" defer></script>
+    <script src="/js/tool.js?v=<%= systemSettings ? systemSettings.pwaCacheVersion : '1' %>" defer></script>
 
     <% if (slug === 'add-watermark') { %>
       <!-- Load PDF-Lib for Client-Side Dynamic Live Watermark Preview -->
