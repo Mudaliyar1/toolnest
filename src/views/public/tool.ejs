@@ -109,6 +109,10 @@
                           <script src="/vendor/pdfjs/pdf.min.js"></script>
                           <script src="/vendor/jszip/jszip.min.js"></script>
                           <% } %>
+                        <% if (tool.slug === 'crop-image') { %>
+                          <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css">
+                          <script src="/vendor/cropperjs/cropper.min.js"></script>
+                          <% } %>
                     <% if (tool.slug==='qr-generator' ) { %>
                       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
                         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -716,31 +720,16 @@
                                                                                         </div>
                                                                                         <% } %>
 
-                                                                                          <% if
-                                                                                            (['resize-image', 'crop-image'
-                                                                                            , 'image-upscaler'
-                                                                                            ].includes(slug)) { %>
-                                                                                            <div class="col-md-6">
-                                                                                              <label
-                                                                                                class="form-label fw-semibold">Target
-                                                                                                Width (px)</label>
-                                                                                              <input type="number"
-                                                                                                name="width"
-                                                                                                class="form-control"
-                                                                                                placeholder="Width in pixels"
-                                                                                                required>
-                                                                                            </div>
-                                                                                            <div class="col-md-6">
-                                                                                              <label
-                                                                                                class="form-label fw-semibold">Target
-                                                                                                Height (px)</label>
-                                                                                              <input type="number"
-                                                                                                name="height"
-                                                                                                class="form-control"
-                                                                                                placeholder="Height in pixels"
-                                                                                                required>
-                                                                                            </div>
-                                                                                            <% } %>
+                                                            <% if (['resize-image', 'crop-image', 'image-upscaler'].includes(slug)) { %>
+                                                            <div class="col-md-6 <%= ['crop-image'].includes(slug) ? 'd-none' : '' %>">
+                                                              <label class="form-label fw-semibold">Target Width (px)</label>
+                                                              <input type="number" name="width" class="form-control" placeholder="Width in pixels" <%= ['crop-image'].includes(slug) ? '' : 'required' %>>
+                                                            </div>
+                                                            <div class="col-md-6 <%= ['crop-image'].includes(slug) ? 'd-none' : '' %>">
+                                                              <label class="form-label fw-semibold">Target Height (px)</label>
+                                                              <input type="number" name="height" class="form-control" placeholder="Height in pixels" <%= ['crop-image'].includes(slug) ? '' : 'required' %>>
+                                                            </div>
+                                                            <% } %>
 
                                                                                               <% if
                                                                                                 (slug==='watermark-image'

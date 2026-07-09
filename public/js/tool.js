@@ -151,12 +151,34 @@
 
           if (file.type.startsWith('image/') && thumbnailWrapper) {
             const img = document.createElement('img');
+            img.id = 'cropper-target-image';
             img.src = URL.createObjectURL(file);
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.maxHeight = '350px';
-            img.style.objectFit = 'contain';
+            img.style.maxWidth = '100%';
+            img.style.display = 'block';
             thumbnailWrapper.appendChild(img);
+
+            if (slug === 'crop-image') {
+              thumbnailWrapper.style.maxHeight = 'none';
+              thumbnailWrapper.style.height = 'auto';
+              if (window.cropperInstance) {
+                window.cropperInstance.destroy();
+                window.cropperInstance = null;
+              }
+              img.onload = () => {
+                window.cropperInstance = new Cropper(img, {
+                  viewMode: 1,
+                  autoCropArea: 0.9,
+                  responsive: true,
+                  checkOrientation: false,
+                  background: true
+                });
+              };
+            } else {
+              img.style.width = '100%';
+              img.style.height = '100%';
+              img.style.maxHeight = '350px';
+              img.style.objectFit = 'contain';
+            }
           } else if (file.type.startsWith('video/') && thumbnailWrapper) {
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
@@ -429,10 +451,18 @@
           try {
             const formData = new FormData(form);
             const files = fileInput ? Array.from(fileInput.files || []) : [];
-            showProcessingModal('browser');
+            const isInstantTool = [
+              'compress-image', 'resize-image', 'crop-image', 
+              'convert-jpg', 'convert-png', 'convert-webp', 
+              'watermark-image', 'blur-image', 'thumbnail-generator',
+              'qr-generator', 'barcode-generator', 'password-generator'
+            ].includes(slug);
+
+            if (!isInstantTool) {
+              showProcessingModal('browser');
+            }
             await runBrowserProcessing(slug, formData, files);
-            const isFfmpegTool = slug.startsWith('video-') || slug.startsWith('audio-') || slug === 'gif-to-video' || slug === 'mp3-cutter';
-            if (!isFfmpegTool && processingModal) {
+            if (!isInstantTool && processingModal) {
               processingModal.hide();
             }
           } catch (error) {
@@ -866,69 +896,88 @@
         let targetBytes = targetSize * 1024;
         if (targetUnit === 'MB') targetBytes = targetSize * 1024 * 1024;
 
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
 
-          // Dynamic scale-down iteration if target size is extremely small
-          let compressionRatio = 0.8;
-          if (targetBytes < file.size * 0.2) {
-            compressionRatio = 0.5;
-            canvas.width = Math.round(img.width * 0.8);
-            canvas.height = Math.round(img.height * 0.8);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          }
+            let compressionRatio = 0.8;
+            if (targetBytes < file.size * 0.2) {
+              compressionRatio = 0.5;
+              canvas.width = Math.round(img.width * 0.8);
+              canvas.height = Math.round(img.height * 0.8);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            }
 
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`compressed_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, 'image/jpeg', compressionRatio);
-        };
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`compressed_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, 'image/jpeg', compressionRatio);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
       else if (slug === 'resize-image') {
         if (files.length === 0) throw new Error('Please select an image file.');
         const file = files[0];
         const w = parseInt(formData.get('width') || 800);
         const h = parseInt(formData.get('height') || 600);
-
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`resized_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, file.type);
-        };
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`resized_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, file.type, 1.0);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
       else if (slug === 'crop-image') {
         if (files.length === 0) throw new Error('Please select an image file.');
         const file = files[0];
-        const w = parseInt(formData.get('width') || 300);
-        const h = parseInt(formData.get('height') || 300);
-
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          // Crop from center
-          const sourceX = (img.width - w) / 2;
-          const sourceY = (img.height - h) / 2;
-          ctx.drawImage(img, sourceX, sourceY, w, h, 0, 0, w, h);
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`cropped_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, file.type);
-        };
+        if (window.cropperInstance) {
+          const canvas = window.cropperInstance.getCroppedCanvas();
+          if (!canvas) throw new Error('Failed to capture cropped canvas.');
+          await new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`cropped_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, file.type, 1.0);
+          });
+        } else {
+          const w = parseInt(formData.get('width') || 300);
+          const h = parseInt(formData.get('height') || 300);
+          await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              const sourceX = (img.width - w) / 2;
+              const sourceY = (img.height - h) / 2;
+              ctx.drawImage(img, sourceX, sourceY, w, h, 0, 0, w, h);
+              canvas.toBlob((blob) => {
+                showBrowserFileResult(`cropped_${file.name}`, URL.createObjectURL(blob), blob.size);
+                resolve();
+              }, file.type, 1.0);
+            };
+            img.onerror = () => reject(new Error('Failed to load image file.'));
+          });
+        }
       }
       else if (slug === 'convert-jpg' || slug === 'convert-png' || slug === 'convert-webp') {
         if (files.length === 0) throw new Error('Please select an image file.');
@@ -936,83 +985,98 @@
         const targetType = slug === 'convert-png' ? 'image/png' : slug === 'convert-webp' ? 'image/webp' : 'image/jpeg';
         const extension = slug === 'convert-png' ? 'png' : slug === 'convert-webp' ? 'webp' : 'jpg';
 
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => {
-            const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-            showBrowserFileResult(`${rawName}.${extension}`, URL.createObjectURL(blob), blob.size);
-          }, targetType);
-        };
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+              const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+              showBrowserFileResult(`${rawName}.${extension}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, targetType, 1.0);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
       else if (slug === 'watermark-image') {
         if (files.length === 0) throw new Error('Please select an image file.');
         const file = files[0];
         const text = formData.get('text') || 'Confidential';
 
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
 
-          ctx.font = `${Math.round(img.width * 0.05)}px sans-serif`;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.textAlign = 'center';
-          ctx.fillText(text, img.width / 2, img.height / 2);
+            ctx.font = `${Math.round(img.width * 0.05)}px sans-serif`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, img.width / 2, img.height / 2);
 
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`watermarked_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, file.type);
-        };
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`watermarked_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, file.type);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
       else if (slug === 'blur-image') {
         if (files.length === 0) throw new Error('Please select an image file.');
         const file = files[0];
         const blurValue = parseInt(formData.get('value') || 10);
 
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.filter = `blur(${blurValue}px)`;
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`blurred_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, file.type);
-        };
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.filter = `blur(${blurValue}px)`;
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`blurred_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, file.type);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
       else if (slug === 'thumbnail-generator') {
         if (files.length === 0) throw new Error('Please select an image file.');
         const file = files[0];
 
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 150;
-          canvas.height = 150;
-          const ctx = canvas.getContext('2d');
-          // Scale crop to fit a square
-          const size = Math.min(img.width, img.height);
-          const x = (img.width - size) / 2;
-          const y = (img.height - size) / 2;
-          ctx.drawImage(img, x, y, size, size, 0, 0, 150, 150);
-          canvas.toBlob((blob) => {
-            showBrowserFileResult(`thumb_${file.name}`, URL.createObjectURL(blob), blob.size);
-          }, file.type);
-        };
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 150;
+            canvas.height = 150;
+            const ctx = canvas.getContext('2d');
+            const size = Math.min(img.width, img.height);
+            const x = (img.width - size) / 2;
+            const y = (img.height - size) / 2;
+            ctx.drawImage(img, x, y, size, size, 0, 0, 150, 150);
+            canvas.toBlob((blob) => {
+              showBrowserFileResult(`thumb_${file.name}`, URL.createObjectURL(blob), blob.size);
+              resolve();
+            }, file.type);
+          };
+          img.onerror = () => reject(new Error('Failed to load image file.'));
+        });
       }
 
       // Utility / Developer / Text Tools

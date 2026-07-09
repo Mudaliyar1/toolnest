@@ -785,14 +785,16 @@ html.dark-theme .modal-footer {
   border-color: var(--border-color) !important;
   color: var(--text-main) !important;
 }
-html.dark-theme .modal-title {
-  color: var(--text-main) !important;
+html.dark-theme .modal-title,
+html.dark-theme .modal-body,
+html.dark-theme .modal-body *,
+html.dark-theme .modal-header *,
+html.dark-theme .text-dark {
+  color: #ffffff !important;
 }
-html.dark-theme .modal-body {
-  color: var(--text-main) !important;
-}
-html.dark-theme .modal-body .text-dark {
-  color: var(--text-main) !important;
+html.dark-theme .modal-content .bg-light {
+  background-color: var(--bg-subtle) !important;
+  border-color: var(--border-color) !important;
 }
 html.dark-theme .btn-close {
   filter: invert(1) grayscale(1) brightness(2) !important;
@@ -819,4 +821,58 @@ html.dark-theme .form-select:focus {
   color: var(--text-main) !important;
   border-color: var(--brand-primary) !important;
   box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Custom Cropper.js styling overrides to highlight the drag handles (dots) */
+.cropper-view-box {
+  outline: 2px solid #2563eb !important;
+  outline-color: #2563eb !important;
+}
+
+.cropper-line {
+  background-color: #2563eb !important;
+}
+
+.cropper-dashed {
+  border-color: #2563eb !important;
+}
+
+.cropper-point {
+  background-color: #2563eb !important;
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  opacity: 1 !important;
+}
+
+/* Adjust positions of points to account for larger size */
+.cropper-point.point-e {
+  margin-top: -6px !important;
+}
+.cropper-point.point-w {
+  margin-top: -6px !important;
+}
+.cropper-point.point-n {
+  margin-left: -6px !important;
+}
+.cropper-point.point-s {
+  margin-left: -6px !important;
+}
+.cropper-point.point-ne {
+  right: -6px !important;
+  top: -6px !important;
+}
+.cropper-point.point-nw {
+  left: -6px !important;
+  top: -6px !important;
+}
+.cropper-point.point-se {
+  right: -6px !important;
+  bottom: -6px !important;
+}
+.cropper-point.point-sw {
+  left: -6px !important;
+  bottom: -6px !important;
 }
