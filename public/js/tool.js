@@ -1,4 +1,5 @@
 (function () {
+  let slug = '';
   function initTool() {
     const fileInput = document.getElementById('media-file-input');
     const previewContainer = document.getElementById('media-preview-container');
@@ -23,7 +24,7 @@
     const formAction = form ? (form.getAttribute('action') || '') : '';
     const slugFromAction = formAction.match(/\/tools\/([^/?]+)/);
     const urlParts = window.location.pathname.split('/');
-    const slug = slugFromAction ? slugFromAction[1] : urlParts[urlParts.length - 1];
+    slug = slugFromAction ? slugFromAction[1] : urlParts[urlParts.length - 1];
 
     // IndexedDB Management for PWA History
     let db = null;
@@ -350,9 +351,7 @@
       xhr.onload = () => {
         clearProcessingTimer();
         if (xhr.status >= 200 && xhr.status < 400) {
-          if (processingModal) {
-            processingModal.hide();
-          }
+          hideProcessingModal();
           document.open();
           document.write(xhr.responseText);
           document.close();
@@ -462,8 +461,8 @@
               showProcessingModal('browser');
             }
             await runBrowserProcessing(slug, formData, files);
-            if (!isInstantTool && processingModal) {
-              processingModal.hide();
+            if (!isInstantTool) {
+              hideProcessingModal();
             }
           } catch (error) {
             console.error('Browser execution failed:', error);
@@ -530,7 +529,7 @@
       }
     }
 
-    async function showBrowserFileResult(fileName, objectUrl, fileSize = 0, append = false) {
+    async function showBrowserFileResult(fileName, objectUrl, fileSize = 0, append = false, blob = null) {
       const container = document.getElementById('browser-result-container');
       const textWrapper = document.getElementById('browser-result-text-wrapper');
       const fileList = document.getElementById('browser-result-file-list');
@@ -574,11 +573,14 @@
 
       // Upload in the background to show in Workspace
       try {
-        const response = await fetch(objectUrl);
-        const blob = await response.blob();
+        let blobToUpload = blob;
+        if (!blobToUpload) {
+          const response = await fetch(objectUrl);
+          blobToUpload = await response.blob();
+        }
 
         const uploadFormData = new FormData();
-        uploadFormData.append('files', blob, fileName);
+        uploadFormData.append('files', blobToUpload, fileName);
         uploadFormData.append('toolName', slug);
 
         const csrfTokenInput = document.querySelector('input[name="_csrf"]');
@@ -652,8 +654,7 @@
         const statusEl = document.getElementById('browser-modal-status');
 
         for (let i = 1; i <= totalPages; i++) {
-          if (statusEl) statusEl.textContent = `Converting page ${i} of ${totalPages}...`;
-          if (progressEl) progressEl.style.width = `${Math.round((i / totalPages) * 100)}%`;
+          updateProcessingModalProgress(Math.round((i / totalPages) * 100), `Converting page ${i} of ${totalPages}...`);
 
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 2.0 });
@@ -673,11 +674,11 @@
           zip.file(`page-${i}.png`, blob);
         }
 
-        if (statusEl) statusEl.textContent = `Packaging images into ZIP file...`;
+        updateProcessingModalProgress(100, `Packaging images into ZIP file...`);
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         
         const zipName = `${file.name.replace(/\.pdf$/i, '')}_images.zip`;
-        showBrowserFileResult(zipName, URL.createObjectURL(zipBlob), zipBlob.size);
+        showBrowserFileResult(zipName, URL.createObjectURL(zipBlob), zipBlob.size, false, zipBlob);
       }
       else if (slug === 'merge-pdf') {
         if (files.length < 2) throw new Error('Please select at least 2 PDF files.');
@@ -690,7 +691,7 @@
         }
         const pdfBytes = await mergedPdf.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult('merged.pdf', URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult('merged.pdf', URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'rotate-pdf') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -701,7 +702,7 @@
         pages.forEach((p) => p.setRotation(PDFLib.degrees(degrees)));
         const pdfBytes = await doc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`rotated_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`rotated_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'split-pdf') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -717,7 +718,7 @@
           const pdfBytes = await splitDoc.save();
           const blob = new Blob([pdfBytes], { type: 'application/pdf' });
           const name = `${files[0].name.replace(/\.pdf$/i, '')}_page_${i + 1}.pdf`;
-          await showBrowserFileResult(name, URL.createObjectURL(blob), blob.size, i > 0);
+          await showBrowserFileResult(name, URL.createObjectURL(blob), blob.size, i > 0, blob);
         }
       }
       else if (slug === 'compress-pdf') {
@@ -729,7 +730,7 @@
         copiedPages.forEach(p => compressedDoc.addPage(p));
         const pdfBytes = await compressedDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`compressed_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`compressed_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'pdf-page-numbering') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -771,30 +772,132 @@
 
         const pdfBytes = await doc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`numbered_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`numbered_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'image-to-pdf') {
         if (files.length === 0) throw new Error('Please select an image file.');
-        const pdfDoc = await PDFLib.PDFDocument.create();
-        for (const file of files) {
-          const imgBytes = await file.arrayBuffer();
-          let pdfImg;
-          if (file.type === 'image/png' || file.name.endsWith('.png')) {
-            pdfImg = await pdfDoc.embedPng(imgBytes);
-          } else {
-            pdfImg = await pdfDoc.embedJpg(imgBytes);
+        
+        // Maintain ultra-high print resolution and quality bounds (2000px max boundary at 95% quality)
+        const maxDim = 2000;
+        const compressQuality = 0.95;
+        const yieldMs = files.length <= 50 ? 5 : 25; // Yield thread to let browser GC and paint reflows safely
+
+        const getEmbeddableImage = async (file) => {
+          const isSmall = file.size < 1.5 * 1024 * 1024;
+          
+          // Embed raw for files under 1.5MB to preserve 100% original quality
+          if (isSmall) {
+            const bytes = await file.arrayBuffer();
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.src = URL.createObjectURL(file);
+              img.onload = () => {
+                URL.revokeObjectURL(img.src);
+                resolve({
+                  bytes: bytes,
+                  width: img.width,
+                  height: img.height,
+                  type: file.type || (file.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg')
+                });
+              };
+              img.onerror = () => {
+                resolve({
+                  bytes: bytes,
+                  width: 800,
+                  height: 1000,
+                  type: 'image/jpeg'
+                });
+              };
+            });
           }
-          const page = pdfDoc.addPage([pdfImg.width, pdfImg.height]);
+
+          // Otherwise, compress at high fidelity (95% quality). Free canvas backing store immediately in callbacks.
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+              URL.revokeObjectURL(img.src);
+              let w = img.width;
+              let h = img.height;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              
+              canvas.toBlob((blob) => {
+                // Free canvas buffer and GPU textures immediately
+                canvas.width = 0;
+                canvas.height = 0;
+                
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  resolve({
+                    bytes: reader.result,
+                    width: w,
+                    height: h,
+                    type: 'image/jpeg'
+                  });
+                };
+                reader.readAsArrayBuffer(blob);
+              }, 'image/jpeg', compressQuality);
+            };
+            img.onerror = () => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve({
+                  bytes: reader.result,
+                  width: 800,
+                  height: 1000,
+                  type: 'image/jpeg'
+                });
+              };
+              reader.readAsArrayBuffer(file);
+            };
+          });
+        };
+
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        
+        for (let i = 0; i < files.length; i++) {
+          updateProcessingModalProgress(Math.round((i / files.length) * 100), `Processing image ${i + 1} of ${files.length}...`);
+          
+          const file = files[i];
+          const { bytes, width, height, type } = await getEmbeddableImage(file);
+          
+          let pdfImg;
+          if (type === 'image/png') {
+            pdfImg = await pdfDoc.embedPng(bytes);
+          } else {
+            pdfImg = await pdfDoc.embedJpg(bytes);
+          }
+          
+          const page = pdfDoc.addPage([width, height]);
           page.drawImage(pdfImg, {
             x: 0,
             y: 0,
-            width: pdfImg.width,
-            height: pdfImg.height
+            width: width,
+            height: height
           });
+          
+          // Yield to main thread to allow garbage collection and progress bar rendering
+          await new Promise(resolve => setTimeout(resolve, yieldMs));
         }
+        updateProcessingModalProgress(100, 'Generating PDF document...');
+        await new Promise(resolve => setTimeout(resolve, 80)); // let UI status render
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult('image_to_pdf.pdf', URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult('image_to_pdf.pdf', URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'extract-pages') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -825,7 +928,7 @@
         copiedPages.forEach(p => newDoc.addPage(p));
         const pdfBytes = await newDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`extracted_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`extracted_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'delete-pages') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -861,7 +964,7 @@
         copiedPages.forEach(p => newDoc.addPage(p));
         const pdfBytes = await newDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`deleted_pages_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`deleted_pages_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
       else if (slug === 'add-watermark') {
         if (files.length === 0) throw new Error('Please select a PDF file.');
@@ -884,7 +987,7 @@
 
         const pdfBytes = await doc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        showBrowserFileResult(`watermarked_${files[0].name}`, URL.createObjectURL(blob), blob.size);
+        showBrowserFileResult(`watermarked_${files[0].name}`, URL.createObjectURL(blob), blob.size, false, blob);
       }
 
       // Image Tools
@@ -1339,6 +1442,7 @@
   let processingModal = null;
   let countdownInterval = null;
   let remainingSeconds = 30;
+  let processingStartTime = null;
 
   function initProcessingModal() {
     if (window.bootstrap && bootstrap.Modal) {
@@ -1352,10 +1456,52 @@
     }
   }
 
-  function showProcessingModal(mode = 'browser') {
+  function hideProcessingModal() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (processingModal) {
+      processingModal.hide();
+      setTimeout(() => {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        if (backdrops.length > 0) {
+          backdrops.forEach(b => b.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }
+      }, 500);
+    }
+  }
+
+  function showProcessingModal(mode = 'browser', estimateSeconds = null) {
     initProcessingModal();
     if (processingModal) {
       if (countdownInterval) clearInterval(countdownInterval);
+      processingStartTime = Date.now();
+
+      // If estimateSeconds is not provided, calculate it dynamically based on the current page context (slug, files)
+      if (estimateSeconds === null) {
+        const fileInput = document.getElementById('media-file-input');
+        const files = fileInput ? Array.from(fileInput.files || []) : [];
+        let totalSize = 0;
+        for (let i = 0; i < files.length; i++) {
+          totalSize += files[i].size;
+        }
+        
+        const isFfmpeg = slug.startsWith('video-') || slug.startsWith('audio-') || slug === 'gif-to-video' || slug === 'mp3-cutter' || slug === 'audio-merger';
+        
+        if (isFfmpeg) {
+          const isVideo = slug.startsWith('video-') || slug === 'gif-to-video';
+          const factor = isVideo ? 1.5 : 0.5;
+          const sizeMb = totalSize / (1024 * 1024);
+          estimateSeconds = Math.max(15, Math.ceil(sizeMb * factor));
+        } else if (slug === 'pdf-to-image') {
+          estimateSeconds = Math.max(5, Math.ceil((totalSize / (1024 * 1024)) * 2));
+        } else if (slug === 'image-to-pdf') {
+          estimateSeconds = Math.max(5, Math.ceil(files.length * 0.3));
+        } else {
+          estimateSeconds = 30; // Fallback default
+        }
+      }
 
       // Reset modal UI to processing state
       document.getElementById('browser-modal-spinner').classList.remove('d-none');
@@ -1375,11 +1521,11 @@
         if (titleEl) titleEl.textContent = '🔒 Local Sandbox Processing';
         if (statusEl) statusEl.textContent = 'Initialising processing engine...';
         if (timerContainer) {
-          timerContainer.innerHTML = 'Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">30</span> seconds';
+          timerContainer.innerHTML = `Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">${estimateSeconds}</span> seconds`;
         }
 
-        // Start 30 seconds countdown
-        remainingSeconds = 30;
+        // Start countdown
+        remainingSeconds = estimateSeconds;
         countdownInterval = setInterval(() => {
           remainingSeconds--;
           const countdownEl2 = document.getElementById('browser-modal-countdown');
@@ -1413,6 +1559,28 @@
 
     const statusEl = document.getElementById('browser-modal-status');
     if (statusEl) statusEl.textContent = statusMsg || `Processing: ${percent}%`;
+
+    // Dynamically adjust estimated time remaining based on active progress!
+    if (percent > 3 && processingStartTime) {
+      const elapsed = (Date.now() - processingStartTime) / 1000;
+      let remaining = Math.round(elapsed * (100 - percent) / percent);
+      if (remaining < 1 && percent < 100) remaining = 1;
+      
+      remainingSeconds = remaining;
+      const countdownEl2 = document.getElementById('browser-modal-countdown');
+      const timerContainer = document.getElementById('browser-modal-timer-container');
+      
+      if (percent >= 100) {
+        if (timerContainer) timerContainer.textContent = 'Finishing up...';
+        if (countdownInterval) clearInterval(countdownInterval);
+      } else {
+        if (countdownEl2) {
+          countdownEl2.textContent = remaining;
+        } else if (timerContainer) {
+          timerContainer.innerHTML = `Estimated time remaining: <span id="browser-modal-countdown" class="fw-bold text-primary">${remaining}</span> seconds`;
+        }
+      }
+    }
   }
 
   function completeProcessingModal(fileName, objectUrl, fileSize) {
@@ -1435,9 +1603,7 @@
       downloadBtn.href = objectUrl;
       downloadBtn.download = fileName;
       downloadBtn.onclick = () => {
-        if (processingModal) {
-          processingModal.hide();
-        }
+        hideProcessingModal();
       };
     }
 
@@ -1792,9 +1958,7 @@
       if (err.message !== '__FALLBACK_TO_SERVER__') {
         errorProcessingModal(err.message);
       } else {
-        if (processingModal) {
-          processingModal.hide();
-        }
+        hideProcessingModal();
       }
       throw err;
     }
