@@ -229,11 +229,11 @@
             audio.className = 'w-100 px-3';
             thumbnailWrapper.appendChild(audio);
           } else if (fileCategory === 'pdf' && thumbnailWrapper) {
-            // Render first page of PDF as preview
+            // Render all pages of PDF as preview (up to 15 pages) in a scrollable wrapper
             thumbnailWrapper.innerHTML = `
               <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100" style="min-height: 250px; background: rgba(30, 41, 59, 0.2); border-radius: var(--radius-lg);">
                 <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
-                <div class="text-secondary small">Generating PDF preview...</div>
+                <div class="text-secondary small">Generating PDF previews...</div>
               </div>
             `;
             
@@ -258,33 +258,47 @@
                 const arrayBuffer = await file.arrayBuffer();
                 const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
                 const pdf = await loadingTask.promise;
-                const page = await pdf.getPage(1);
-                
-                const viewport = page.getViewport({ scale: 1.0 });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                
-                const scale = Math.min(1.5, 400 / viewport.width);
-                const scaledViewport = page.getViewport({ scale });
-                canvas.width = scaledViewport.width;
-                canvas.height = scaledViewport.height;
-                
-                context.fillStyle = '#ffffff';
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                
-                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                const totalPages = pdf.numPages;
                 
                 thumbnailWrapper.innerHTML = '';
-                canvas.style.maxWidth = '100%';
-                canvas.style.height = 'auto';
-                canvas.style.borderRadius = '8px';
-                canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                canvas.style.display = 'block';
-                canvas.style.margin = '0 auto';
-                thumbnailWrapper.appendChild(canvas);
+                thumbnailWrapper.style.display = 'block';
+                thumbnailWrapper.style.overflowY = 'auto';
+                thumbnailWrapper.style.height = '400px';
+                thumbnailWrapper.style.maxHeight = '400px';
                 
-                thumbnailWrapper.style.height = 'auto';
-                thumbnailWrapper.style.maxHeight = 'none';
+                const limitPages = Math.min(totalPages, 15);
+                
+                for (let pageNum = 1; pageNum <= limitPages; pageNum++) {
+                  const page = await pdf.getPage(pageNum);
+                  const viewport = page.getViewport({ scale: 1.0 });
+                  const canvas = document.createElement('canvas');
+                  const context = canvas.getContext('2d');
+                  
+                  const scale = Math.min(1.5, 400 / viewport.width);
+                  const scaledViewport = page.getViewport({ scale });
+                  canvas.width = scaledViewport.width;
+                  canvas.height = scaledViewport.height;
+                  
+                  context.fillStyle = '#ffffff';
+                  context.fillRect(0, 0, canvas.width, canvas.height);
+                  
+                  await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                  
+                  canvas.style.maxWidth = '100%';
+                  canvas.style.height = 'auto';
+                  canvas.style.borderRadius = '8px';
+                  canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                  canvas.style.display = 'block';
+                  canvas.style.margin = '14px auto';
+                  thumbnailWrapper.appendChild(canvas);
+                }
+                
+                if (totalPages > 15) {
+                  const moreEl = document.createElement('div');
+                  moreEl.className = 'text-center text-muted small py-2';
+                  moreEl.textContent = `+ ${totalPages - 15} more pages`;
+                  thumbnailWrapper.appendChild(moreEl);
+                }
               } catch (err) {
                 console.error('PDF preview rendering failed:', err);
                 thumbnailWrapper.innerHTML = `

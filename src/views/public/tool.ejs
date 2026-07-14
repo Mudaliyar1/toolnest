@@ -1961,33 +1961,47 @@
               
               const loadingTask = lib.getDocument({ data: pdfBytes });
               const pdf = await loadingTask.promise;
-              const previewPage = await pdf.getPage(1);
-              
-              const viewport = previewPage.getViewport({ scale: 1.0 });
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-              
-              const scale = Math.min(1.5, 400 / viewport.width);
-              const scaledViewport = previewPage.getViewport({ scale });
-              canvas.width = scaledViewport.width;
-              canvas.height = scaledViewport.height;
-              
-              context.fillStyle = '#ffffff';
-              context.fillRect(0, 0, canvas.width, canvas.height);
-              
-              await previewPage.render({ canvasContext: context, viewport: scaledViewport }).promise;
+              const totalPages = pdf.numPages;
               
               thumbnailWrapper.innerHTML = '';
-              canvas.style.maxWidth = '100%';
-              canvas.style.height = 'auto';
-              canvas.style.borderRadius = '8px';
-              canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-              canvas.style.display = 'block';
-              canvas.style.margin = '0 auto';
-              thumbnailWrapper.appendChild(canvas);
+              thumbnailWrapper.style.display = 'block';
+              thumbnailWrapper.style.overflowY = 'auto';
+              thumbnailWrapper.style.height = '400px';
+              thumbnailWrapper.style.maxHeight = '400px';
               
-              thumbnailWrapper.style.height = 'auto';
-              thumbnailWrapper.style.maxHeight = 'none';
+              const limitPages = Math.min(totalPages, 15);
+              
+              for (let pageNum = 1; pageNum <= limitPages; pageNum++) {
+                const previewPage = await pdf.getPage(pageNum);
+                const viewport = previewPage.getViewport({ scale: 1.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                const scale = Math.min(1.5, 400 / viewport.width);
+                const scaledViewport = previewPage.getViewport({ scale });
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+                
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                
+                await previewPage.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                
+                canvas.style.maxWidth = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.borderRadius = '8px';
+                canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                canvas.style.display = 'block';
+                canvas.style.margin = '14px auto';
+                thumbnailWrapper.appendChild(canvas);
+              }
+              
+              if (totalPages > 15) {
+                const moreEl = document.createElement('div');
+                moreEl.className = 'text-center text-muted small py-2';
+                moreEl.textContent = `+ ${totalPages - 15} more pages`;
+                thumbnailWrapper.appendChild(moreEl);
+              }
             } catch (err) {
               console.error('[Watermark Preview] Error generating live watermark:', err);
               thumbnailWrapper.innerHTML = `
