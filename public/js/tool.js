@@ -145,42 +145,74 @@
         if (previewContainer) previewContainer.classList.remove('d-none');
         if (thumbnailWrapper) thumbnailWrapper.innerHTML = '';
 
+        function getNormalizedFileType(file) {
+          const type = (file.type || '').toLowerCase();
+          const name = (file.name || '').toLowerCase();
+          
+          if (type.startsWith('image/') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.gif') || name.endsWith('.webp') || name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.svg')) {
+            return 'image';
+          }
+          if (type === 'application/pdf' || name.endsWith('.pdf')) {
+            return 'pdf';
+          }
+          if (type.startsWith('video/') || name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.mov') || name.endsWith('.avi') || name.endsWith('.mkv')) {
+            return 'video';
+          }
+          if (type.startsWith('audio/') || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.aac')) {
+            return 'audio';
+          }
+          return 'other';
+        }
+
         if (files.length === 1) {
           const file = files[0];
           if (filenameEl) filenameEl.textContent = file.name;
           if (filesizeEl) filesizeEl.textContent = formatBytes(file.size);
 
-          if (file.type.startsWith('image/') && thumbnailWrapper) {
-            const img = document.createElement('img');
-            img.id = 'cropper-target-image';
-            img.src = URL.createObjectURL(file);
-            img.style.maxWidth = '100%';
-            img.style.display = 'block';
-            thumbnailWrapper.appendChild(img);
+          const fileCategory = getNormalizedFileType(file);
 
-            if (slug === 'crop-image') {
-              thumbnailWrapper.style.maxHeight = 'none';
-              thumbnailWrapper.style.height = 'auto';
-              if (window.cropperInstance) {
-                window.cropperInstance.destroy();
-                window.cropperInstance = null;
-              }
-              img.onload = () => {
-                window.cropperInstance = new Cropper(img, {
-                  viewMode: 1,
-                  autoCropArea: 0.9,
-                  responsive: true,
-                  checkOrientation: false,
-                  background: true
-                });
-              };
+          if (fileCategory === 'image' && thumbnailWrapper) {
+            const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+            if (isHeic) {
+              thumbnailWrapper.innerHTML = `
+                <div class="text-primary d-flex flex-column align-items-center justify-content-center gap-2 p-4 w-100 h-100" style="min-height: 200px; background: rgba(37, 99, 235, 0.1); border-radius: var(--radius-lg);">
+                  <span style="font-size: 4rem; line-height: 1;">📸</span>
+                  <span class="badge bg-primary mt-1">HEIC Image</span>
+                  <span class="small text-secondary text-center mt-1">HEIC format is fully supported for processing.</span>
+                </div>
+              `;
             } else {
-              img.style.width = '100%';
-              img.style.height = '100%';
-              img.style.maxHeight = '350px';
-              img.style.objectFit = 'contain';
+              const img = document.createElement('img');
+              img.id = 'cropper-target-image';
+              img.src = URL.createObjectURL(file);
+              img.style.maxWidth = '100%';
+              img.style.display = 'block';
+              thumbnailWrapper.appendChild(img);
+
+              if (slug === 'crop-image') {
+                thumbnailWrapper.style.maxHeight = 'none';
+                thumbnailWrapper.style.height = 'auto';
+                if (window.cropperInstance) {
+                  window.cropperInstance.destroy();
+                  window.cropperInstance = null;
+                }
+                img.onload = () => {
+                  window.cropperInstance = new Cropper(img, {
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    checkOrientation: false,
+                    background: true
+                  });
+                };
+              } else {
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.maxHeight = '350px';
+                img.style.objectFit = 'contain';
+              }
             }
-          } else if (file.type.startsWith('video/') && thumbnailWrapper) {
+          } else if (fileCategory === 'video' && thumbnailWrapper) {
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
             video.controls = true;
@@ -190,19 +222,80 @@
             video.style.maxHeight = '350px';
             video.style.objectFit = 'contain';
             thumbnailWrapper.appendChild(video);
-          } else if (file.type.startsWith('audio/') && thumbnailWrapper) {
+          } else if (fileCategory === 'audio' && thumbnailWrapper) {
             const audio = document.createElement('audio');
             audio.src = URL.createObjectURL(file);
             audio.controls = true;
             audio.className = 'w-100 px-3';
             thumbnailWrapper.appendChild(audio);
-          } else if (file.type === 'application/pdf' && thumbnailWrapper) {
-            const fileUrl = URL.createObjectURL(file);
+          } else if (fileCategory === 'pdf' && thumbnailWrapper) {
+            // Render first page of PDF as preview
             thumbnailWrapper.innerHTML = `
-              <div class="w-100 h-100" style="min-height: 450px; border-radius: var(--radius-lg); overflow: hidden; background: #e2e8f0;">
-                <iframe src="${fileUrl}#toolbar=0&navpanes=0" width="100%" height="450px" style="border: none;"></iframe>
+              <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100" style="min-height: 250px; background: rgba(30, 41, 59, 0.2); border-radius: var(--radius-lg);">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div class="text-secondary small">Generating PDF preview...</div>
               </div>
             `;
+            
+            (async () => {
+              try {
+                // Ensure pdf.js is loaded
+                if (typeof pdfjsLib === 'undefined') {
+                  const libPath = '/vendor/pdfjs/pdf.min.js';
+                  await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = libPath;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                  });
+                }
+                const lib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                if (!lib.GlobalWorkerOptions.workerSrc) {
+                  lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+                }
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1);
+                
+                const viewport = page.getViewport({ scale: 1.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                const scale = Math.min(1.5, 400 / viewport.width);
+                const scaledViewport = page.getViewport({ scale });
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+                
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                
+                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                
+                thumbnailWrapper.innerHTML = '';
+                canvas.style.maxWidth = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.borderRadius = '8px';
+                canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                canvas.style.display = 'block';
+                canvas.style.margin = '0 auto';
+                thumbnailWrapper.appendChild(canvas);
+                
+                thumbnailWrapper.style.height = 'auto';
+                thumbnailWrapper.style.maxHeight = 'none';
+              } catch (err) {
+                console.error('PDF preview rendering failed:', err);
+                thumbnailWrapper.innerHTML = `
+                  <div class="text-danger d-flex flex-column align-items-center gap-2 p-4">
+                    <span style="font-size: 4rem; line-height: 1;">📕</span>
+                    <span class="badge bg-danger">PDF File</span>
+                    <span class="small text-secondary">${file.name}</span>
+                  </div>
+                `;
+              }
+            })();
           } else if (thumbnailWrapper) {
             thumbnailWrapper.innerHTML = `
               <div class="text-secondary d-flex flex-column align-items-center gap-2">
