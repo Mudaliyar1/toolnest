@@ -98,6 +98,22 @@
       });
     }
 
+    // 3.5 Local time formatting for file cards
+    function formatLocalTimes() {
+      const localTimeEls = document.querySelectorAll('.file-local-time');
+      localTimeEls.forEach(el => {
+        const timeStr = el.getAttribute('data-time');
+        if (!timeStr) return;
+        const date = new Date(timeStr);
+        if (isNaN(date.getTime())) return;
+        
+        // Format to local "12:11 AM" time
+        const formatted = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+        el.textContent = formatted;
+      });
+    }
+    formatLocalTimes();
+
     // 4. Poller to auto-refresh workspace when files list changes (e.g. from uploads/processing)
     let initialFilesJson = null;
 

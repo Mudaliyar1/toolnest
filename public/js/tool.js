@@ -268,44 +268,238 @@
                 const totalPages = pdf.numPages;
                 
                 thumbnailWrapper.innerHTML = '';
-                thumbnailWrapper.className = 'bg-light border';
+                thumbnailWrapper.className = 'bg-light border p-3';
                 thumbnailWrapper.style.display = 'block';
                 thumbnailWrapper.style.overflowY = 'auto';
-                thumbnailWrapper.style.height = '400px';
-                thumbnailWrapper.style.maxHeight = '400px';
+                thumbnailWrapper.style.height = '450px';
+                thumbnailWrapper.style.maxHeight = '450px';
                 
-                const limitPages = Math.min(totalPages, 15);
+                const pagesInput = document.querySelector('input[name="pages"]');
+                const deletedPagesSet = new Set();
+                const extractedPagesSet = new Set();
                 
-                for (let pageNum = 1; pageNum <= limitPages; pageNum++) {
-                  const page = await pdf.getPage(pageNum);
-                  const viewport = page.getViewport({ scale: 1.0 });
-                  const canvas = document.createElement('canvas');
-                  const context = canvas.getContext('2d');
-                  
-                  const scale = Math.min(1.5, 400 / viewport.width);
-                  const scaledViewport = page.getViewport({ scale });
-                  canvas.width = scaledViewport.width;
-                  canvas.height = scaledViewport.height;
-                  
-                  context.fillStyle = '#ffffff';
-                  context.fillRect(0, 0, canvas.width, canvas.height);
-                  
-                  await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
-                  
-                  canvas.style.maxWidth = '100%';
-                  canvas.style.height = 'auto';
-                  canvas.style.borderRadius = '8px';
-                  canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                  canvas.style.display = 'block';
-                  canvas.style.margin = '14px auto';
-                  thumbnailWrapper.appendChild(canvas);
+                // Helper to parse page lists or ranges (e.g., "1, 3-5, 8")
+                function parsePagesString(str, maxPage) {
+                  const pages = new Set();
+                  if (!str) return pages;
+                  const parts = str.split(',');
+                  for (let part of parts) {
+                    part = part.trim();
+                    if (!part) continue;
+                    if (part.includes('-')) {
+                      const range = part.split('-');
+                      const start = parseInt(range[0], 10);
+                      const end = parseInt(range[1], 10);
+                      if (!isNaN(start) && !isNaN(end)) {
+                        const s = Math.max(1, Math.min(start, end));
+                        const e = Math.min(maxPage, Math.max(start, end));
+                        for (let i = s; i <= e; i++) {
+                          pages.add(i);
+                        }
+                      }
+                    } else {
+                      const val = parseInt(part, 10);
+                      if (!isNaN(val) && val >= 1 && val <= maxPage) {
+                        pages.add(val);
+                      }
+                    }
+                  }
+                  return pages;
                 }
                 
-                if (totalPages > 15) {
-                  const moreEl = document.createElement('div');
-                  moreEl.className = 'text-center text-muted small py-2';
-                  moreEl.textContent = `+ ${totalPages - 15} more pages`;
-                  thumbnailWrapper.appendChild(moreEl);
+                if (slug === 'delete-pages' || slug === 'extract-pages') {
+                  const gridDiv = document.createElement('div');
+                  gridDiv.className = 'd-flex flex-wrap justify-content-center gap-3';
+                  thumbnailWrapper.appendChild(gridDiv);
+                  
+                  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    
+                    const container = document.createElement('div');
+                    container.className = 'pdf-page-container position-relative bg-white border rounded';
+                    container.style.width = '180px';
+                    container.style.height = '250px';
+                    container.style.cursor = 'pointer';
+                    container.style.transition = 'all 0.2s ease-in-out';
+                    container.style.overflow = 'hidden';
+                    container.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    container.style.userSelect = 'none';
+                    container.setAttribute('data-page-num', pageNum);
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    const scale = Math.min(1.5, 180 / viewport.width);
+                    const scaledViewport = page.getViewport({ scale });
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                    
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                    canvas.style.objectFit = 'contain';
+                    canvas.style.display = 'block';
+                    canvas.style.pointerEvents = 'none';
+                    container.appendChild(canvas);
+                    
+                    const badge = document.createElement('div');
+                    badge.className = 'position-absolute top-0 start-0 m-2 bg-dark text-white px-2 py-0.5 rounded-pill small fw-semibold';
+                    badge.style.opacity = '0.8';
+                    badge.style.fontSize = '0.75rem';
+                    badge.style.pointerEvents = 'none';
+                    badge.textContent = `P. ${pageNum}`;
+                    container.appendChild(badge);
+                    
+                    const overlayLabel = document.createElement('div');
+                    overlayLabel.className = 'position-absolute top-0 start-0 w-100 h-100 fw-bold text-uppercase';
+                    overlayLabel.style.fontSize = '1.1rem';
+                    overlayLabel.style.display = 'none';
+                    overlayLabel.style.alignItems = 'center';
+                    overlayLabel.style.justifyContent = 'center';
+                    overlayLabel.style.pointerEvents = 'none';
+                    overlayLabel.style.zIndex = '5';
+                    container.appendChild(overlayLabel);
+                    
+                    let actionBtn = document.createElement('button');
+                    actionBtn.type = 'button';
+                    actionBtn.className = 'position-absolute top-0 end-0 m-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center border-0';
+                    actionBtn.style.width = '28px';
+                    actionBtn.style.height = '28px';
+                    actionBtn.style.padding = '0';
+                    actionBtn.style.fontSize = '0.8rem';
+                    actionBtn.style.pointerEvents = 'none';
+                    container.appendChild(actionBtn);
+                    
+                    gridDiv.appendChild(container);
+                    
+                    function updateVisuals() {
+                      if (slug === 'delete-pages') {
+                        if (deletedPagesSet.has(pageNum)) {
+                          canvas.style.filter = 'grayscale(1) opacity(0.35)';
+                          container.style.border = '2px solid #ef4444';
+                          overlayLabel.style.display = 'flex';
+                          overlayLabel.innerHTML = '<span class="badge bg-danger text-white">DELETED</span>';
+                          actionBtn.className = 'btn btn-success btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center';
+                          actionBtn.innerHTML = '↩️';
+                          actionBtn.title = 'Restore Page';
+                        } else {
+                          canvas.style.filter = '';
+                          container.style.border = '';
+                          overlayLabel.style.display = 'none';
+                          overlayLabel.innerHTML = '';
+                          actionBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center';
+                          actionBtn.innerHTML = '🗑️';
+                          actionBtn.title = 'Delete Page';
+                        }
+                      } else if (slug === 'extract-pages') {
+                        if (extractedPagesSet.has(pageNum)) {
+                          canvas.style.filter = '';
+                          container.style.border = '3px solid #22c55e';
+                          container.style.transform = 'scale(1.02)';
+                          overlayLabel.style.display = 'flex';
+                          overlayLabel.innerHTML = '<span class="badge bg-success text-white">EXTRACT</span>';
+                          actionBtn.className = 'btn btn-success btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center';
+                          actionBtn.innerHTML = '✔️';
+                          actionBtn.title = 'Selected';
+                        } else {
+                          canvas.style.filter = 'opacity(0.65)';
+                          container.style.border = '';
+                          container.style.transform = '';
+                          overlayLabel.style.display = 'none';
+                          overlayLabel.innerHTML = '';
+                          actionBtn.className = 'btn btn-secondary btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow-sm d-flex align-items-center justify-content-center';
+                          actionBtn.innerHTML = '➕';
+                          actionBtn.title = 'Extract Page';
+                        }
+                      }
+                    }
+                    
+                    function togglePage(e) {
+                      if (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }
+                      if (slug === 'delete-pages') {
+                        if (deletedPagesSet.has(pageNum)) {
+                          deletedPagesSet.delete(pageNum);
+                        } else {
+                          deletedPagesSet.add(pageNum);
+                        }
+                        if (pagesInput) {
+                          pagesInput.value = Array.from(deletedPagesSet).sort((a,b)=>a-b).join(', ');
+                        }
+                      } else if (slug === 'extract-pages') {
+                        if (extractedPagesSet.has(pageNum)) {
+                          extractedPagesSet.delete(pageNum);
+                        } else {
+                          extractedPagesSet.add(pageNum);
+                        }
+                        if (pagesInput) {
+                          pagesInput.value = Array.from(extractedPagesSet).sort((a,b)=>a-b).join(', ');
+                        }
+                      }
+                      updateVisuals();
+                    }
+                    
+                    container.addEventListener('click', togglePage);
+                    updateVisuals();
+                    container.updatePageVisuals = updateVisuals;
+                    
+                    // Yield Event Loop to keep browser thread responsive during multiple page renders
+                    await new Promise(resolve => setTimeout(resolve, 8));
+                  }
+                  
+                  if (pagesInput) {
+                    function syncFromInput() {
+                      const parsed = parsePagesString(pagesInput.value || '', totalPages);
+                      if (slug === 'delete-pages') {
+                        deletedPagesSet.clear();
+                        parsed.forEach(p => deletedPagesSet.add(p));
+                      } else if (slug === 'extract-pages') {
+                        extractedPagesSet.clear();
+                        parsed.forEach(p => extractedPagesSet.add(p));
+                      }
+                      const containers = gridDiv.querySelectorAll('.pdf-page-container');
+                      containers.forEach(el => {
+                        if (el.updatePageVisuals) el.updatePageVisuals();
+                      });
+                    }
+                    pagesInput.addEventListener('input', syncFromInput);
+                    pagesInput.addEventListener('change', syncFromInput);
+                    syncFromInput();
+                  }
+                } else {
+                  // Standard vertical column layout for other tools (split, compress, rotate, etc.)
+                  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    const scale = Math.min(1.5, 400 / viewport.width);
+                    const scaledViewport = page.getViewport({ scale });
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                    
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.borderRadius = '8px';
+                    canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    canvas.style.display = 'block';
+                    canvas.style.margin = '14px auto';
+                    thumbnailWrapper.appendChild(canvas);
+                    
+                    // Yield Event Loop to keep browser thread responsive during multiple page renders
+                    await new Promise(resolve => setTimeout(resolve, 8));
+                  }
                 }
               } catch (err) {
                 console.error('PDF preview rendering failed:', err);
@@ -561,6 +755,8 @@
 
           const browserResultContainer = document.getElementById('browser-result-container');
           if (browserResultContainer) browserResultContainer.classList.add('d-none');
+          const serverResultContainer = document.getElementById('server-result-container');
+          if (serverResultContainer) serverResultContainer.classList.add('d-none');
 
           try {
             const formData = new FormData(form);
@@ -569,8 +765,15 @@
               'compress-image', 'resize-image', 'crop-image', 
               'convert-jpg', 'convert-png', 'convert-webp', 
               'watermark-image', 'blur-image', 'thumbnail-generator',
-              'qr-generator', 'barcode-generator', 'password-generator'
+              'qr-generator', 'barcode-generator', 'password-generator',
+              'merge-pdf', 'split-pdf', 'compress-pdf', 'pdf-page-numbering',
+              'image-to-pdf', 'rotate-pdf', 'extract-pages', 'delete-pages',
+              'add-watermark', 'reorder-pages'
             ].includes(slug);
+
+            if (files.length > 0) {
+              syncBrowserInputsToWorkspace(files, slug);
+            }
 
             if (!isInstantTool) {
               showProcessingModal('browser');
@@ -679,12 +882,7 @@
       container.classList.remove('d-none');
       container.scrollIntoView({ behavior: 'smooth' });
 
-      // Enforce zero server uploads if strategy is browser
       const statusEl = document.getElementById(statusId);
-      if (config.storageStrategy === 'browser') {
-        if (statusEl) statusEl.innerHTML = `<span class="text-muted">🔒 Sandbox Mode (Zero server uploads enabled)</span>`;
-        return;
-      }
 
       // Upload in the background to show in Workspace
       try {
@@ -719,6 +917,30 @@
       } catch (err) {
         console.error('Failed to sync browser result to workspace:', err);
         if (statusEl) statusEl.innerHTML = `<span class="text-danger">✖ Failed to save to workspace.</span>`;
+      }
+    }
+
+    async function syncBrowserInputsToWorkspace(files, toolSlug) {
+      try {
+        const csrfTokenInput = document.querySelector('input[name="_csrf"]');
+        const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+
+        for (const file of files) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('files', file, file.name);
+          uploadFormData.append('toolName', toolSlug);
+          uploadFormData.append('direction', 'input');
+
+          fetch('/workspace/upload-browser-result', {
+            method: 'POST',
+            headers: {
+              'x-csrf-token': csrfToken
+            },
+            body: uploadFormData
+          }).catch(err => console.error('Failed to sync browser input file to workspace:', err));
+        }
+      } catch (err) {
+        console.error('Failed to sync inputs to workspace:', err);
       }
     }
 

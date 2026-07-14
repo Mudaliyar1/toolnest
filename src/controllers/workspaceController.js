@@ -206,7 +206,7 @@ async function uploadBrowserResult(req, res, next) {
         cloudinaryUrl: uploadResult ? uploadResult.url : undefined,
         cloudinaryResourceType: uploadResult ? uploadResult.resourceType : undefined,
         toolName: toolSlug,
-        direction: 'output'
+        direction: req.body.direction || 'output'
       });
 
       createdRecords.push(record.toObject());

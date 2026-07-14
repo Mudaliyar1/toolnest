@@ -82,6 +82,90 @@
     };
     return descriptions[slug] || 'Run this tool with customized parameters below.';
     };
+
+    const getToolGuide = (slug) => {
+      const guides = {
+        'merge-pdf': 'Select two or more PDF files. We will join them together into one single PDF in the exact order you select them. Great for combining chapters, receipts, or documents.',
+        'split-pdf': 'Upload a PDF. Choose to extract certain page ranges or split every single page into its own separate PDF. Very handy for separating individual pages from a large booklet.',
+        'compress-pdf': 'Upload your PDF to make its file size smaller so you can easily email or upload it. This tool optimizes images and data inside the file without losing text clarity.',
+        'unlock-pdf': 'Upload a PDF that has copy/print blocks or is password-protected. We will unlock it so you can freely read, edit, print, or copy content from it.',
+        'protect-pdf': 'Enter a password to encrypt and secure your PDF document. This prevents unauthorized users from opening or reading your sensitive information.',
+        'rotate-pdf': 'Rotate pages in your PDF by 90, 180, or 270 degrees. Perfect for fixing sideways scanned documents or upside-down pages.',
+        'extract-pages': 'Upload a PDF to see a visual page organizer grid. Simply click the pages you want to keep (or type page numbers), and we will build a new PDF containing only those selected pages.',
+        'delete-pages': 'Upload a PDF to see a page organizer grid. Simply click the pages you want to throw away (or type page numbers), and we will generate a clean PDF with those pages removed.',
+        'add-watermark': 'Add a custom text stamp (like "DRAFT" or "CONFIDENTIAL") across pages. Customize the text, size, color, opacity, and rotation to protect your documents.',
+        'pdf-to-image': 'Convert a PDF document into high-quality images. Every page of the PDF will be saved as an image so you can easily share or preview them.',
+        'image-to-pdf': 'Select one or multiple images (JPG, PNG, WEBP). We will merge and package them into a single, clean PDF file. Perfect for turning photo scans into documents.',
+        'pdf-page-numbering': 'Add clean page numbers (like "Page 1 of 5") automatically to the top or bottom of your PDF document. Select positioning and numbering formats easily.',
+        'compress-image': 'Reduce the byte size of your image to make it load faster on websites or fit email limits. Customize the quality slider to adjust weight vs clarity.',
+        'resize-image': 'Enter a custom width and height in pixels to scale your image up or down. Great for meeting profile picture requirements or reducing image dimensions.',
+        'crop-image': 'Drag and adjust the cropping box overlay to select the exact rectangular part of the photo you want to keep, cutting out unwanted borders.',
+        'convert-jpg': 'Convert PNG, WEBP, or SVG graphics into JPG format. JPG is the most widely compatible image type for sharing online.',
+        'convert-png': 'Convert JPG, WEBP, or SVG images into PNG format. PNG uses lossless compression, making it ideal for logos, screenshots, and text graphics.',
+        'convert-webp': 'Convert images into WebP format. WebP is a next-generation format developed by Google that is 30% smaller than JPG and PNG at identical quality.',
+        'watermark-image': 'Type text to overlay as a stamp on top of your photo. You can select the color and position to protect your original photography.',
+        'blur-image': 'Apply a soft blur overlay to your image. Great for hiding sensitive details or creating decorative background layouts.',
+        'background-removal': 'Remove solid color backgrounds from your logo or graphic. Adjust the sensitivity threshold to target specific background tones.',
+        'image-upscaler': 'Enlarge your image using high-quality filters that prevent pixelation, giving you a clean upscaled version.',
+        'thumbnail-generator': 'Instantly convert any photo into standardized square thumbnails for blogs, stores, or profile grids.',
+        'color-extractor': 'Upload an image, and we will analyze it to extract the top 5 dominant colors with their Hex codes. Perfect for graphic design projects.',
+        'video-compressor': 'Compress video files to make them much smaller while preserving playback quality. Saves device storage and makes sharing easy.',
+        'video-trimmer': 'Enter a start and end timestamp to cut out a specific part of a video, removing unwanted intro or outro segments.',
+        'video-merger': 'Select multiple video clips. We will join them together into one single continuous video in chronological order.',
+        'video-resolution-changer': 'Change the resolution (width and height) of your video file to fit different player frames.',
+        'video-to-gif': 'Turn a video clip into a looping animated GIF image. Perfect for creating memes or quick inline visual animations.',
+        'gif-to-video': 'Convert animated GIFs into standard, playable MP4 videos.',
+        'thumbnail-extractor': 'Choose a specific timestamp in your video, and we will capture and save that exact video frame as a high-quality JPEG picture.',
+        'video-metadata-viewer': 'Inspect standard media encoding details, bitrate, framerate, duration, audio tracks, and container info.',
+        'video-mute-tool': 'Remove sound from any video clip, saving a clean muted copy.',
+        'video-speed-controller': 'Speed up your video to fast-forward (up to 4x) or slow it down (down to 0.25x) to create slow-motion clips.',
+        'audio-converter': 'Convert audio files into MP3, WAV, AAC, or M4A formats. Solves playback compatibility issues on different music players.',
+        'mp3-cutter': 'Trim audio tracks by selecting start and end times. Perfect for creating custom ringtones or snippets.',
+        'audio-merger': 'Join multiple audio clips end-to-end to create a single continuous mixtape or track.',
+        'volume-booster': 'Increase the sound volume level of quiet audio files by adding decibels.',
+        'audio-speed-changer': 'Change playback speed of audio files without changing the pitch or sounding distorted.',
+        'audio-metadata-viewer': 'Inspect and view audio metadata tags like artist name, track title, album title, year, and genre.',
+        'audio-compressor': 'Optimize audio encoding parameters to reduce file size while maintaining clean playback.',
+        'json-formatter': 'Take messy JSON data and clean it up with proper spacing and indentation so you can read it easily.',
+        'json-validator': 'Scan your JSON code block to verify if it has syntax errors, showing you exactly where the formatting is broken.',
+        'base64-encoder': 'Convert normal text into Base64 format to safely encode data for web applications and APIs.',
+        'base64-decoder': 'Convert Base64 formatted data back into readable, human-plain text.',
+        'url-encoder': 'Convert special URL characters into web-safe percent codes (e.g. spaces to %20) so links load correctly.',
+        'url-decoder': 'Convert URL percent-encoded characters back into normal readable characters.',
+        'jwt-decoder': 'Paste a JSON Web Token (JWT) to instantly decode and read its header metadata and payload data.',
+        'uuid-generator': 'Generate standard, random universally unique identifiers (UUID v4) for databases and coding projects.',
+        'regex-tester': 'Input a search pattern (regular expression) and test text to see if and where they match.',
+        'sql-formatter': 'Take single-line messy SQL queries and format them into readable, clean code blocks.',
+        'html-formatter': 'Clean and indent HTML tags to make your code structure easily understandable.',
+        'css-minifier': 'Strip comments and whitespaces from your CSS styles to make files compile faster.',
+        'javascript-minifier': 'Compress your JavaScript code to make the files smaller and load faster on websites.',
+        'hash-generator': 'Generate secure MD5, SHA-256, or SHA-512 cryptographic hashes from any input text.',
+        'cgpa-calculator': 'Enter your semester grades to calculate your Cumulative Grade Point Average (CGPA).',
+        'sgpa-calculator': 'Enter your course credits and grade scores to calculate your Semester Grade Point Average (SGPA).',
+        'attendance-calculator': 'Enter your attended classes and total classes to check your attendance rate and see how many more you need to attend.',
+        'percentage-calculator': 'Quickly calculate fraction values, ratios, and discount percentages.',
+        'study-timer': 'Start study blocks utilizing Pomodoro style deep work rules to manage study intervals and rest breaks.',
+        'gpa-predictor': 'Enter your target CGPA to predict what GPA you need in upcoming semesters to achieve your goal.',
+        'gst-calculator': 'Enter an amount and select standard GST tax rates (5%, 12%, 18%, 28%) to calculate the tax added or subtracted.',
+        'emi-calculator': 'Calculate your monthly loan installments (EMI), total interest, and complete repayment amounts based on interest rate and loan term.',
+        'invoice-generator': 'Quickly create professional PDF invoices by listing item names, quantities, unit prices, and tax rates.',
+        'profit-calculator': 'Calculate gross and net profits by entering revenue, cost of goods, and operating expenses.',
+        'margin-calculator': 'Calculate the gross profit margin percentage of your sales to determine business profitability.',
+        'discount-calculator': 'Enter the original price and discount percentage to find out the final price and exactly how much money you save.',
+        'loan-calculator': 'Calculate overall interest, total repayments, and monthly installments for auto or home loans.',
+        'qr-generator': 'Generate printable QR codes for websites, texts, or phone numbers. Download as SVG or PNG.',
+        'barcode-generator': 'Generate standard printable barcodes (Code 128 / EAN-13) from raw numeric values.',
+        'password-generator': 'Instantly create random, secure passwords with custom uppercase, numbers, and symbols.',
+        'password-strength-checker': 'Type a password to test its security, length, entropy level, and vulnerability to hacking.',
+        'age-calculator': 'Enter your date of birth to calculate your exact age down to the years, months, days, and weekday of birth.',
+        'unit-converter': 'Quickly convert metric and imperial units of measurement (length, weight, temperature).',
+        'currency-converter': 'Enter an amount to convert values between global currencies using standard exchange rates.',
+        'random-generator': 'Generate secure random numbers, password strings, or mock database IDs.',
+        'text-case-converter': 'Instantly transform text sentences into UPPERCASE, lowercase, Title Case, or Sentence Case.',
+        'word-counter': 'Type or paste text to see characters, words, sentences, and paragraph counts.'
+      };
+      return guides[slug] || 'This tool lets you configure options and process files locally inside your browser.';
+    };
     %>
     <section class="container py-5 py-lg-6">
       <div class="row justify-content-center">
@@ -169,7 +253,7 @@
                                           <%= tool.name %>
                                         </h1>
                                         <p class="text-secondary mb-0">
-                                          <%= getToolDescription(slug) %>
+                                          <%= getToolGuide(slug) %>
                                         </p>
                                       </div>
                                     </div>
@@ -1681,73 +1765,75 @@
                                               </div>
                                             </div>
 
-                                            <% if (result) { %>
-                                              <% if (result.kind==='error' ) { %>
-                                                <div class="alert alert-danger border-0 shadow-sm mt-4 mb-0 p-3"
-                                                  role="alert">
-                                                  <div class="fw-semibold mb-1">
-                                                    <%= result.title %>
-                                                  </div>
-                                                  <div class="small">
-                                                    <%= result.content %>
-                                                  </div>
-                                                </div>
-                                                <% } else { %>
-                                                  <div class="card border-0 mt-4 p-2 bg-light">
-                                                    <div class="card-body">
-                                                      <h2 class="h5 fw-bold text-dark mb-3">
-                                                        <%= result.title %>
-                                                      </h2>
-                                                      <% if (result.kind==='text' ) { %>
-                                                        <pre
-                                                          class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
-                                                        <% } else if (result.kind==='file' ) { %>
-                                                          <div
-                                                            class="alert alert-success border-0 shadow-sm mb-3 d-flex align-items-center gap-2"
-                                                            role="alert">
-                                                            <span style="font-size: 1.3rem;">✅</span>
-                                                            <div><strong>Success!</strong> File processed. Now you can
-                                                              download the file below.</div>
-                                                          </div>
-                                                          <div class="d-grid gap-2">
-                                                            <% resultRecords.forEach((file)=> { %>
-                                                              <div
-                                                                class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border-0 shadow-sm rounded-3 p-3 mb-2"
-                                                                style="border: 1px solid rgba(226, 232, 240, 0.6) !important;">
-                                                                <div class="fw-semibold text-dark">
-                                                                  <%= file.processedName %>
-                                                                </div>
-                                                                <a href="/workspace/files/<%= file._id %>/download"
-                                                                  class="btn btn-outline-primary btn-sm"
-                                                                  download="<%= file.processedName %>">Download</a>
-                                                              </div>
-                                                              <% }) %>
-                                                          </div>
-                                                          <% } %>
+                                            <div id="server-result-container">
+                                              <% if (result) { %>
+                                                <% if (result.kind==='error' ) { %>
+                                                  <div class="alert alert-danger border-0 shadow-sm mt-4 mb-0 p-3"
+                                                    role="alert">
+                                                    <div class="fw-semibold mb-1">
+                                                      <%= result.title %>
+                                                    </div>
+                                                    <div class="small">
+                                                      <%= result.content %>
                                                     </div>
                                                   </div>
-                                                  <% } %>
-                                                  <script>
-                                                      (function() {
-                                                        function logHistory() {
-                                                          if (typeof window.logToolHistory === 'function') {
-                                                            const kind = '<%= result.kind %>';
-                                                            const title = '<%= result.title %>';
-                                                            if (kind === 'text') {
-                                                              window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed output');
-                                                            } else if (kind === 'file') {
-                                                              window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed file');
+                                                  <% } else { %>
+                                                    <div class="card border-0 mt-4 p-2 bg-light">
+                                                      <div class="card-body">
+                                                        <h2 class="h5 fw-bold text-dark mb-3">
+                                                          <%= result.title %>
+                                                        </h2>
+                                                        <% if (result.kind==='text' ) { %>
+                                                          <pre
+                                                            class="bg-white border rounded-3 p-3 mb-0 text-wrap"><%= result.content %></pre>
+                                                          <% } else if (result.kind==='file' ) { %>
+                                                            <div
+                                                              class="alert alert-success border-0 shadow-sm mb-3 d-flex align-items-center gap-2"
+                                                              role="alert">
+                                                              <span style="font-size: 1.3rem;">✅</span>
+                                                              <div><strong>Success!</strong> File processed. Now you can
+                                                                download the file below.</div>
+                                                            </div>
+                                                            <div class="d-grid gap-2">
+                                                              <% resultRecords.forEach((file)=> { %>
+                                                                <div
+                                                                  class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white border-0 shadow-sm rounded-3 p-3 mb-2"
+                                                                  style="border: 1px solid rgba(226, 232, 240, 0.6) !important;">
+                                                                  <div class="fw-semibold text-dark">
+                                                                    <%= file.processedName %>
+                                                                  </div>
+                                                                  <a href="/workspace/files/<%= file._id %>/download"
+                                                                    class="btn btn-outline-primary btn-sm"
+                                                                    download="<%= file.processedName %>">Download</a>
+                                                                </div>
+                                                                <% }) %>
+                                                            </div>
+                                                            <% } %>
+                                                      </div>
+                                                    </div>
+                                                    <% } %>
+                                                    <script>
+                                                        (function() {
+                                                          function logHistory() {
+                                                            if (typeof window.logToolHistory === 'function') {
+                                                              const kind = '<%= result.kind %>';
+                                                              const title = '<%= result.title %>';
+                                                              if (kind === 'text') {
+                                                                window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed output');
+                                                              } else if (kind === 'file') {
+                                                                window.logToolHistory('<%= tool.slug %>', title, 'success', 'Server processed file');
+                                                              }
                                                             }
                                                           }
-                                                        }
-                                                        if (document.readyState === 'loading') {
-                                                          document.addEventListener('DOMContentLoaded', logHistory);
-                                                        } else {
-                                                          logHistory();
-                                                        }
-                                                      })();
-                                                    </script>
-                                                    <% } %>
+                                                          if (document.readyState === 'loading') {
+                                                            document.addEventListener('DOMContentLoaded', logHistory);
+                                                          } else {
+                                                            logHistory();
+                                                          }
+                                                        })();
+                                                      </script>
+                                                      <% } %>
+                                            </div>
 
                                                       <!-- Professional About / FAQ Section at the bottom of card -->
                                                       <div class="border-top mt-5 pt-4">
