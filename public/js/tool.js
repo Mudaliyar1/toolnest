@@ -143,7 +143,14 @@
         }
 
         if (previewContainer) previewContainer.classList.remove('d-none');
-        if (thumbnailWrapper) thumbnailWrapper.innerHTML = '';
+        if (thumbnailWrapper) {
+          thumbnailWrapper.innerHTML = '';
+          thumbnailWrapper.className = 'bg-light d-flex align-items-center justify-content-center border';
+          thumbnailWrapper.style.height = '';
+          thumbnailWrapper.style.maxHeight = '';
+          thumbnailWrapper.style.overflowY = '';
+          thumbnailWrapper.style.display = '';
+        }
 
         function getNormalizedFileType(file) {
           const type = (file.type || '').toLowerCase();
@@ -261,6 +268,7 @@
                 const totalPages = pdf.numPages;
                 
                 thumbnailWrapper.innerHTML = '';
+                thumbnailWrapper.className = 'bg-light border';
                 thumbnailWrapper.style.display = 'block';
                 thumbnailWrapper.style.overflowY = 'auto';
                 thumbnailWrapper.style.height = '400px';
