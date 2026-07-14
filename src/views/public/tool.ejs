@@ -1894,9 +1894,10 @@
               const textWidth = font.widthOfTextAtSize(text, size);
               const textHeight = size;
     
+              // Watermark only the first page for the preview to run extremely fast and save memory
               const pages = pdfDoc.getPages();
-              // Watermark all pages so user can preview any page they scroll to
-              pages.forEach((page) => {
+              if (pages.length > 0) {
+                const page = pages[0];
                 let x = page.getWidth() / 2;
                 let y = page.getHeight() / 2;
                 
@@ -1938,29 +1939,64 @@
                   opacity,
                   rotate: PDFLib.degrees(angle)
                 });
-              });
+              }
     
               const pdfBytes = await pdfDoc.save();
-              const blob = new Blob([pdfBytes], { type: 'application/pdf' });
               
-              if (currentBlobUrl) {
-                URL.revokeObjectURL(currentBlobUrl);
+              // Load pdf.js dynamically to render the page to canvas
+              if (typeof pdfjsLib === 'undefined') {
+                const libPath = '/vendor/pdfjs/pdf.min.js';
+                await new Promise((resolve, reject) => {
+                  const script = document.createElement('script');
+                  script.src = libPath;
+                  script.onload = resolve;
+                  script.onerror = reject;
+                  document.head.appendChild(script);
+                });
               }
-              currentBlobUrl = URL.createObjectURL(blob);
+              const lib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+              if (!lib.GlobalWorkerOptions.workerSrc) {
+                lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+              }
               
-              // Inject or update iframe src in preview card
-              let iframe = thumbnailWrapper.querySelector('iframe');
-              if (!iframe) {
-                thumbnailWrapper.innerHTML = `
-                  <div class="w-100 h-100" style="min-height: 450px; border-radius: var(--radius-lg); overflow: hidden; background: #e2e8f0;">
-                    <iframe src="${currentBlobUrl}#toolbar=0&navpanes=0" width="100%" height="450px" style="border: none;"></iframe>
-                  </div>
-                `;
-              } else {
-                iframe.src = `${currentBlobUrl}#toolbar=0&navpanes=0`;
-              }
+              const loadingTask = lib.getDocument({ data: pdfBytes });
+              const pdf = await loadingTask.promise;
+              const previewPage = await pdf.getPage(1);
+              
+              const viewport = previewPage.getViewport({ scale: 1.0 });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              
+              const scale = Math.min(1.5, 400 / viewport.width);
+              const scaledViewport = previewPage.getViewport({ scale });
+              canvas.width = scaledViewport.width;
+              canvas.height = scaledViewport.height;
+              
+              context.fillStyle = '#ffffff';
+              context.fillRect(0, 0, canvas.width, canvas.height);
+              
+              await previewPage.render({ canvasContext: context, viewport: scaledViewport }).promise;
+              
+              thumbnailWrapper.innerHTML = '';
+              canvas.style.maxWidth = '100%';
+              canvas.style.height = 'auto';
+              canvas.style.borderRadius = '8px';
+              canvas.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+              canvas.style.display = 'block';
+              canvas.style.margin = '0 auto';
+              thumbnailWrapper.appendChild(canvas);
+              
+              thumbnailWrapper.style.height = 'auto';
+              thumbnailWrapper.style.maxHeight = 'none';
             } catch (err) {
               console.error('[Watermark Preview] Error generating live watermark:', err);
+              thumbnailWrapper.innerHTML = `
+                <div class="text-danger d-flex flex-column align-items-center gap-2 p-4">
+                  <span style="font-size: 4rem; line-height: 1;">📕</span>
+                  <span class="badge bg-danger">Watermark Error</span>
+                  <span class="small text-secondary">${file.name}</span>
+                </div>
+              `;
             }
           }
     
