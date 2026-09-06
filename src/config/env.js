@@ -1,12 +1,13 @@
-const path = require('path');
-const dotenv = require('dotenv');
+const rootDir = path.resolve(__dirname, '..', '..');
+dotenv.config({ path: path.join(rootDir, '.env') });
+dotenv.config(); // fallback to process.cwd() if different
 
-dotenv.config();
+const rawMongoUri = (process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/raisetool').trim().replace(/^["']|["']$/g, '');
 
 module.exports = {
   env: process.env.NODE_ENV || 'development',
   port: Number.parseInt(process.env.PORT || '3000', 10),
-  mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/raisetool',
+  mongoUri: rawMongoUri,
   sessionSecret: process.env.SESSION_SECRET || 'raisetool-session-secret',
   cookieSecret: process.env.COOKIE_SECRET || 'raisetool-cookie-secret',
   cookieEncryptionKey: process.env.COOKIE_ENCRYPTION_KEY || 'raisetool-cookie-encryption-key-32',
