@@ -1,3 +1,6 @@
+const path = require('path');
+const dotenv = require('dotenv');
+
 const rootDir = path.resolve(__dirname, '..', '..');
 dotenv.config({ path: path.join(rootDir, '.env') });
 dotenv.config(); // fallback to process.cwd() if different
