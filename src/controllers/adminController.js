@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Workspace = require('../models/Workspace');
 const File = require('../models/File');
 const ToolUsage = require('../models/ToolUsage');
@@ -9,11 +10,20 @@ const env = require('../config/env');
 const fs = require('fs/promises');
 
 async function renderLogin(req, res) {
-  await ensureDefaultAdmin();
+  let dbWarning = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await ensureDefaultAdmin();
+    } catch (err) {
+      console.error('Error ensuring default admin:', err.message);
+    }
+  } else {
+    dbWarning = 'Database connection is currently offline. Please check MONGODB_URI and MongoDB Atlas network access.';
+  }
 
   res.render('admin/login', {
     title: 'Secure Admin Access',
-    error: null
+    error: dbWarning
   });
 }
 
@@ -27,6 +37,13 @@ async function handleLogin(req, res) {
     });
   }
 
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).render('admin/login', {
+      title: 'Secure Admin Access',
+      error: 'Database is currently offline. Cannot authenticate admin.'
+    });
+  }
+
   const admin = await authenticateAdmin(email, password);
   if (!admin) {
     return res.status(401).render('admin/login', {
@@ -35,13 +52,45 @@ async function handleLogin(req, res) {
     });
   }
 
-  await Admin.updateOne({ email: admin.email }, { $set: { lastLoginAt: new Date() } });
+  try {
+    await Admin.updateOne({ email: admin.email }, { $set: { lastLoginAt: new Date() } });
+  } catch (err) {
+    console.warn('Failed to update admin lastLoginAt:', err.message);
+  }
+
   setAdminCookie(res, admin);
   return res.redirect(`${env.adminAccessPath}/dashboard`);
 }
 
 async function renderDashboard(req, res) {
   const range = req.query.range || 'all';
+
+  if (mongoose.connection.readyState !== 1) {
+    return res.render('admin/dashboard', {
+      title: 'Admin Dashboard (Offline Mode)',
+      admin: req.admin,
+      currentRange: range,
+      metrics: {
+        totalVisitors: 0,
+        totalSessions: 0,
+        activeUsers: 0,
+        todayVisitors: 0,
+        monthlyVisitors: 0,
+        totalToolUsage: 0,
+        serverHealth: { status: 'db-offline', uptime: process.uptime() },
+        activeFiles: 0,
+        expiredFiles: 0,
+        cloudinaryAssets: 0,
+        cloudinarySize: 0,
+        dailyVisits: [],
+        topCountries: [],
+        topBrowsers: [],
+        topDevices: []
+      },
+      mostUsedTools: [],
+      csrfToken: req.csrfToken ? req.csrfToken() : ''
+    });
+  }
   
   // Calculate date boundaries
   let dateFilter = {};
@@ -175,12 +224,23 @@ async function renderProcessingManagement(req, res) {
   const settings = await getSettings();
   const serverLoad = getServerLoad();
   
-  const [activeFilesCount, expiredFilesCount, cloudinaryAssetsCount, localStorageCount] = await Promise.all([
-    File.countDocuments({ expireTime: { $gt: new Date() } }),
-    File.countDocuments({ expireTime: { $lte: new Date() } }),
-    File.countDocuments({ cloudinaryPublicId: { $ne: null } }),
-    File.countDocuments({ storagePath: { $ne: null } })
-  ]);
+  let activeFilesCount = 0;
+  let expiredFilesCount = 0;
+  let cloudinaryAssetsCount = 0;
+  let localStorageCount = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      [activeFilesCount, expiredFilesCount, cloudinaryAssetsCount, localStorageCount] = await Promise.all([
+        File.countDocuments({ expireTime: { $gt: new Date() } }),
+        File.countDocuments({ expireTime: { $lte: new Date() } }),
+        File.countDocuments({ cloudinaryPublicId: { $ne: null } }),
+        File.countDocuments({ storagePath: { $ne: null } })
+      ]);
+    } catch (err) {
+      console.warn('Failed to fetch processing metrics from MongoDB:', err.message);
+    }
+  }
 
   const allTools = getAllTools();
   
@@ -195,7 +255,7 @@ async function renderProcessingManagement(req, res) {
       localFiles: localStorageCount
     },
     allTools,
-    csrfToken: req.csrfToken(),
+    csrfToken: req.csrfToken ? req.csrfToken() : '',
     success: req.query.success || null,
     error: req.query.error || null
   });
@@ -314,7 +374,38 @@ async function clearPwaCache(req, res) {
 
 async function renderStats(req, res) {
   const { tool, country, device, browser, startDate, endDate } = req.query;
-  
+
+  if (mongoose.connection.readyState !== 1) {
+    return res.render('admin/stats', {
+      title: 'Detailed Statistics (Offline Mode) | RaiseTool',
+      admin: req.admin,
+      csrfToken: req.csrfToken ? req.csrfToken() : '',
+      filters: {
+        tool: tool || 'all',
+        country: country || 'all',
+        device: device || 'all',
+        browser: browser || 'all',
+        startDate: startDate || '',
+        endDate: endDate || ''
+      },
+      options: {
+        countries: [],
+        browsers: [],
+        tools: []
+      },
+      metrics: {
+        visitorsCount: 0,
+        filesCount: 0,
+        cloudinaryCount: 0,
+        latestVisits: [],
+        latestFiles: [],
+        dailyTrafficStats: [],
+        toolUsageStats: [],
+        fileTypeStats: []
+      }
+    });
+  }
+
   // 1. Build Visitor filter query
   const visitorQuery = {};
   let visitorFilterActive = false;
@@ -506,35 +597,52 @@ async function renderPerformance(req, res) {
   };
 
   // Query live metrics, database collection documents, and activity feed
-  const mongoose = require('mongoose');
   const SystemSettings = require('../models/SystemSettings');
   const { httpTracker } = require('../services/analyticsService');
 
-  const [
-    recentUploads,
-    processedToday,
-    activeWorkspacesToday,
-    allTimeProcessed,
-    workspaceCount,
-    fileCount,
-    toolUsageCount,
-    visitorCount,
-    adminCount,
-    analyticsCount,
-    settings
-  ] = await Promise.all([
-    File.find({}).sort({ uploadTime: -1 }).limit(15).lean(),
-    File.countDocuments({ uploadTime: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
-    Workspace.countDocuments({ lastActivity: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
-    File.countDocuments({}),
-    Workspace.countDocuments({}),
-    File.countDocuments({}),
-    ToolUsage.countDocuments({}),
-    Visitor.countDocuments({}),
-    Admin.countDocuments({}),
-    Analytics.countDocuments({}),
-    SystemSettings.findOne({}).lean()
-  ]);
+  let recentUploads = [];
+  let processedToday = 0;
+  let activeWorkspacesToday = 0;
+  let allTimeProcessed = 0;
+  let workspaceCount = 0;
+  let fileCount = 0;
+  let toolUsageCount = 0;
+  let visitorCount = 0;
+  let adminCount = 0;
+  let analyticsCount = 0;
+  let settings = null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      [
+        recentUploads,
+        processedToday,
+        activeWorkspacesToday,
+        allTimeProcessed,
+        workspaceCount,
+        fileCount,
+        toolUsageCount,
+        visitorCount,
+        adminCount,
+        analyticsCount,
+        settings
+      ] = await Promise.all([
+        File.find({}).sort({ uploadTime: -1 }).limit(15).lean(),
+        File.countDocuments({ uploadTime: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+        Workspace.countDocuments({ lastActivity: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+        File.countDocuments({}),
+        Workspace.countDocuments({}),
+        File.countDocuments({}),
+        ToolUsage.countDocuments({}),
+        Visitor.countDocuments({}),
+        Admin.countDocuments({}),
+        Analytics.countDocuments({}),
+        SystemSettings.findOne({}).lean()
+      ]);
+    } catch (err) {
+      console.warn('Failed to fetch performance metrics from MongoDB:', err.message);
+    }
+  }
 
   const activeSettings = settings || { storageStrategy: 'server', cloudinaryEnabled: false, cloudinaryProcessedJobs: 0 };
 

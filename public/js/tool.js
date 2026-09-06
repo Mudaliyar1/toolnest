@@ -768,7 +768,8 @@
               'qr-generator', 'barcode-generator', 'password-generator',
               'merge-pdf', 'split-pdf', 'compress-pdf', 'pdf-page-numbering',
               'image-to-pdf', 'rotate-pdf', 'extract-pages', 'delete-pages',
-              'add-watermark', 'reorder-pages'
+              'add-watermark', 'reorder-pages', 'pdf-to-word', 'word-to-pdf',
+              'pdf-to-ppt', 'ppt-to-pdf', 'word-to-ppt', 'ppt-to-word'
             ].includes(slug);
 
             if (files.length > 0) {
@@ -946,6 +947,412 @@
 
     // Main Browser-Side Operations Dispatcher
     async function runBrowserProcessing(slug, formData, files) {
+      if (slug === 'pdf-to-ppt') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const file = files[0];
+
+        let lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (!lib) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/pdfjs/pdf.min.js';
+            script.onload = () => {
+              lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+              if (lib) {
+                lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+              }
+              resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        } else {
+          lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+        }
+
+        if (typeof PptxGenJS === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const pdf = await loadingTask.promise;
+        const pptx = new PptxGenJS();
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+
+          const slide = pptx.addSlide();
+          slide.addText(`Slide ${i}`, { x: 0.5, y: 0.4, w: 9.0, h: 0.8, fontSize: 24, bold: true, color: '334155' });
+          slide.addText(pageText || "(Empty Page)", { x: 0.5, y: 1.4, w: 9.0, h: 4.8, fontSize: 13, color: '475569', verticalAlign: 'top' });
+        }
+
+        const pptxBlob = await pptx.write('blob');
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.pptx';
+        await showBrowserFileResult(outName, URL.createObjectURL(pptxBlob), pptxBlob.size, false, pptxBlob);
+        return;
+      }
+
+      if (slug === 'ppt-to-pdf') {
+        if (files.length === 0) throw new Error('Please select a PowerPoint file (.pptx).');
+        const file = files[0];
+
+        if (typeof JSZip === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/jszip/jszip.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        if (typeof html2pdf === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const slideFiles = [];
+        zip.forEach((relativePath, zipFile) => {
+          if (relativePath.startsWith("ppt/slides/slide") && relativePath.endsWith(".xml")) {
+            slideFiles.push(zipFile);
+          }
+        });
+
+        slideFiles.sort((a, b) => {
+          const aIdx = parseInt(a.name.match(/\d+/)[0], 10);
+          const bIdx = parseInt(b.name.match(/\d+/)[0], 10);
+          return aIdx - bIdx;
+        });
+
+        const element = document.createElement('div');
+        element.style.padding = '40px';
+        element.style.backgroundColor = '#ffffff';
+        element.style.color = '#000000';
+        element.style.fontFamily = 'Arial, sans-serif';
+
+        for (let i = 0; i < slideFiles.length; i++) {
+          const content = await slideFiles[i].async("string");
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(content, "text/xml");
+          const texts = xmlDoc.getElementsByTagName("a:t");
+          const slideText = Array.from(texts).map(node => node.textContent).join(" ");
+
+          const slideDiv = document.createElement('div');
+          slideDiv.style.border = '1px solid #e2e8f0';
+          slideDiv.style.borderRadius = '12px';
+          slideDiv.style.padding = '30px';
+          slideDiv.style.marginBottom = '25px';
+          slideDiv.style.minHeight = '120mm';
+          slideDiv.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)';
+          slideDiv.innerHTML = `<h2 style="font-size: 20px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0;">Slide ${i + 1}</h2><p style="font-size: 15px; line-height: 1.6; color: #475569; margin-top: 15px;">${slideText || '<i>(Empty Slide)</i>'}</p>`;
+          element.appendChild(slideDiv);
+        }
+
+        const opt = {
+          margin:       15,
+          filename:     file.name.replace(/\.[^/.]+$/, "") + '.pdf',
+          image:        { type: 'jpeg', quality: 1.0 },
+          html2canvas:  { scale: 2.0, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.pdf';
+        await showBrowserFileResult(outName, URL.createObjectURL(pdfBlob), pdfBlob.size, false, pdfBlob);
+        return;
+      }
+
+      if (slug === 'word-to-ppt') {
+        if (files.length === 0) throw new Error('Please select a Word file (.docx).');
+        const file = files[0];
+
+        if (typeof mammoth === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        if (typeof PptxGenJS === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const parseResult = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        const text = parseResult.value;
+        const paragraphs = text.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+
+        const pptx = new PptxGenJS();
+        let slideIndex = 1;
+
+        for (let i = 0; i < paragraphs.length; i += 3) {
+          const slideParas = paragraphs.slice(i, i + 3);
+          const slideText = slideParas.join('\n\n');
+
+          const slide = pptx.addSlide();
+          slide.addText(`Slide ${slideIndex}`, { x: 0.5, y: 0.4, w: 9.0, h: 0.8, fontSize: 24, bold: true, color: '334155' });
+          slide.addText(slideText, { x: 0.5, y: 1.4, w: 9.0, h: 4.8, fontSize: 14, color: '475569', verticalAlign: 'top', lineSpacing: 22 });
+          slideIndex++;
+        }
+
+        if (paragraphs.length === 0) {
+          const slide = pptx.addSlide();
+          slide.addText("Slide 1", { x: 0.5, y: 0.4, w: 9.0, h: 0.8, fontSize: 24, bold: true, color: '334155' });
+          slide.addText("(Empty Document)", { x: 0.5, y: 1.4, w: 9.0, h: 4.8, fontSize: 14, color: '475569', verticalAlign: 'top' });
+        }
+
+        const pptxBlob = await pptx.write('blob');
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.pptx';
+        await showBrowserFileResult(outName, URL.createObjectURL(pptxBlob), pptxBlob.size, false, pptxBlob);
+        return;
+      }
+
+      if (slug === 'ppt-to-word') {
+        if (files.length === 0) throw new Error('Please select a PowerPoint file (.pptx).');
+        const file = files[0];
+
+        if (typeof JSZip === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/jszip/jszip.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        if (typeof docx === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const slideFiles = [];
+        zip.forEach((relativePath, zipFile) => {
+          if (relativePath.startsWith("ppt/slides/slide") && relativePath.endsWith(".xml")) {
+            slideFiles.push(zipFile);
+          }
+        });
+
+        slideFiles.sort((a, b) => {
+          const aIdx = parseInt(a.name.match(/\d+/)[0], 10);
+          const bIdx = parseInt(b.name.match(/\d+/)[0], 10);
+          return aIdx - bIdx;
+        });
+
+        const docChildren = [];
+        for (let i = 0; i < slideFiles.length; i++) {
+          const content = await slideFiles[i].async("string");
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(content, "text/xml");
+          const texts = xmlDoc.getElementsByTagName("a:t");
+          const slideText = Array.from(texts).map(node => node.textContent).join(" ");
+
+          docChildren.push(
+            new docx.Paragraph({
+              children: [
+                new docx.TextRun({
+                  text: `Slide ${i + 1}`,
+                  bold: true,
+                  size: 28, // 14pt
+                })
+              ],
+              spacing: { after: 120 }
+            }),
+            new docx.Paragraph({
+              children: [
+                new docx.TextRun({
+                  text: slideText || "(Empty Slide)",
+                  size: 24, // 12pt
+                })
+              ],
+              spacing: { after: 300 }
+            })
+          );
+
+          if (i < slideFiles.length - 1) {
+            docChildren.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
+          }
+        }
+
+        if (slideFiles.length === 0) {
+          docChildren.push(
+            new docx.Paragraph({
+              children: [
+                new docx.TextRun({
+                  text: "PowerPoint text content could not be extracted.",
+                  size: 24,
+                })
+              ]
+            })
+          );
+        }
+
+        const doc = new docx.Document({
+          sections: [{
+            children: docChildren
+          }]
+        });
+
+        const docxBlob = await docx.Packer.toBlob(doc);
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.docx';
+        await showBrowserFileResult(outName, URL.createObjectURL(docxBlob), docxBlob.size, false, docxBlob);
+        return;
+      }
+
+      if (slug === 'pdf-to-word') {
+        if (files.length === 0) throw new Error('Please select a PDF file.');
+        const file = files[0];
+        
+        let lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (!lib) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/vendor/pdfjs/pdf.min.js';
+            script.onload = () => {
+              lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+              if (lib) {
+                lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+              }
+              resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        } else {
+          lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+        }
+        
+        if (typeof docx === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const pdf = await loadingTask.promise;
+        const docChildren = [];
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          
+          docChildren.push(
+            new docx.Paragraph({
+              children: [
+                new docx.TextRun({
+                  text: pageText || " ",
+                  size: 24, // 12pt
+                })
+              ],
+              spacing: { after: 200 }
+            })
+          );
+          
+          if (i < pdf.numPages) {
+            docChildren.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
+          }
+        }
+        
+        const doc = new docx.Document({
+          sections: [{
+            children: docChildren
+          }]
+        });
+        
+        const docxBlob = await docx.Packer.toBlob(doc);
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.docx';
+        await showBrowserFileResult(outName, URL.createObjectURL(docxBlob), docxBlob.size, false, docxBlob);
+        return;
+      }
+
+      if (slug === 'word-to-pdf') {
+        if (files.length === 0) throw new Error('Please select a Word file (.docx).');
+        const file = files[0];
+        
+        if (typeof mammoth === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+        
+        if (typeof html2pdf === 'undefined') {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const parseResult = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+        const htmlContent = parseResult.value;
+        
+        const element = document.createElement('div');
+        element.style.padding = '40px';
+        element.style.color = '#000000';
+        element.style.backgroundColor = '#ffffff';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.lineHeight = '1.6';
+        element.innerHTML = htmlContent;
+        
+        const opt = {
+          margin:       15,
+          filename:     file.name.replace(/\.[^/.]+$/, "") + '.pdf',
+          image:        { type: 'jpeg', quality: 1.0 },
+          html2canvas:  { scale: 2.0, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+        const outName = file.name.replace(/\.[^/.]+$/, "") + '.pdf';
+        await showBrowserFileResult(outName, URL.createObjectURL(pdfBlob), pdfBlob.size, false, pdfBlob);
+        return;
+      }
+
       // PDF Tools
       if (slug === 'pdf-to-image') {
         if (files.length === 0) throw new Error('Please select a PDF file.');

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Admin = require('../models/Admin');
 const env = require('../config/env');
 const { sign, verifySignedValue } = require('../utils/cookies');
@@ -26,37 +27,62 @@ function verifyPassword(password, storedHash) {
 }
 
 async function ensureDefaultAdmin() {
-  const existing = await Admin.findOne({ email: ADMIN_EMAIL }).lean();
-  if (existing) {
-    return existing;
-  }
-
-  if (!env.adminPassword || env.adminPassword === 'change-me') {
+  if (mongoose.connection.readyState !== 1) {
     return null;
   }
 
-  const passwordHash = hashPassword(env.adminPassword);
-  return Admin.create({
-    email: ADMIN_EMAIL,
-    passwordHash,
-    role: 'superadmin',
-    permissions: ['dashboard:read', 'analytics:read', 'files:read', 'files:delete', 'settings:write', 'security:read']
-  });
+  try {
+    const existing = await Admin.findOne({ email: ADMIN_EMAIL });
+    if (existing) {
+      if (env.adminPassword && env.adminPassword !== 'change-me' && !verifyPassword(env.adminPassword, existing.passwordHash)) {
+        existing.passwordHash = hashPassword(env.adminPassword);
+        await existing.save();
+        console.log(`✓ Synchronized admin password for ${ADMIN_EMAIL}`);
+      }
+      return existing;
+    }
+
+    if (!env.adminPassword || env.adminPassword === 'change-me') {
+      return null;
+    }
+
+    const passwordHash = hashPassword(env.adminPassword);
+    const newAdmin = await Admin.create({
+      email: ADMIN_EMAIL,
+      passwordHash,
+      role: 'superadmin',
+      permissions: ['dashboard:read', 'analytics:read', 'files:read', 'files:delete', 'settings:write', 'security:read']
+    });
+    console.log(`✓ Created admin account for ${ADMIN_EMAIL}`);
+    return newAdmin;
+  } catch (error) {
+    console.error('Failed to ensure default admin in MongoDB:', error.message);
+    return null;
+  }
 }
 
 async function authenticateAdmin(email, password) {
-  await ensureDefaultAdmin();
-
-  const freshAdmin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
-  if (!freshAdmin) {
+  if (mongoose.connection.readyState !== 1) {
     return null;
   }
 
-  if (verifyPassword(password, freshAdmin.passwordHash)) {
-    return freshAdmin;
-  }
+  await ensureDefaultAdmin();
 
-  return null;
+  try {
+    const freshAdmin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
+    if (!freshAdmin) {
+      return null;
+    }
+
+    if (verifyPassword(password, freshAdmin.passwordHash)) {
+      return freshAdmin;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to authenticate admin from MongoDB:', error.message);
+    return null;
+  }
 }
 
 function createAdminSession(admin) {

@@ -16,7 +16,13 @@ const toolCatalog = [
       { slug: 'pdf-to-image', name: 'PDF to Image' },
       { slug: 'image-to-pdf', name: 'Image to PDF' },
       { slug: 'pdf-page-numbering', name: 'PDF Page Numbering' },
-      { slug: 'reorder-pages', name: 'Reorder PDF Pages' }
+      { slug: 'reorder-pages', name: 'Reorder PDF Pages' },
+      { slug: 'pdf-to-word', name: 'PDF to Word' },
+      { slug: 'word-to-pdf', name: 'Word to PDF' },
+      { slug: 'pdf-to-ppt', name: 'PDF to PowerPoint' },
+      { slug: 'ppt-to-pdf', name: 'PowerPoint to PDF' },
+      { slug: 'word-to-ppt', name: 'Word to PowerPoint' },
+      { slug: 'ppt-to-word', name: 'PowerPoint to Word' }
     ]
   },
   {

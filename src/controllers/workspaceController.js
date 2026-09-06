@@ -144,17 +144,38 @@ async function uploadBrowserResult(req, res, next) {
       // 2. Resolve expected tool category to validate file types/signatures
       const toolSlug = req.body.toolName || 'browser-tool';
       const tool = findToolBySlug(toolSlug);
+      const direction = req.body.direction || 'output';
       let expectedCategory = 'other';
       if (tool) {
-        expectedCategory = tool.category;
-        if (tool.slug === 'image-to-pdf') {
-          expectedCategory = 'image';
-        } else if (tool.slug === 'gif-to-video') {
-          expectedCategory = 'video';
+        if (tool.category === 'pdf') {
+          if (tool.slug === 'pdf-to-image') {
+            expectedCategory = (direction === 'input') ? 'pdf' : 'image';
+          } else if (tool.slug === 'image-to-pdf') {
+            expectedCategory = (direction === 'input') ? 'image' : 'pdf';
+          } else if (tool.slug === 'pdf-to-word') {
+            expectedCategory = (direction === 'input') ? 'pdf' : 'office';
+          } else if (tool.slug === 'word-to-pdf') {
+            expectedCategory = (direction === 'input') ? 'office' : 'pdf';
+          } else if (tool.slug === 'pdf-to-ppt') {
+            expectedCategory = (direction === 'input') ? 'pdf' : 'office';
+          } else if (tool.slug === 'ppt-to-pdf') {
+            expectedCategory = (direction === 'input') ? 'office' : 'pdf';
+          } else if (tool.slug === 'word-to-ppt') {
+            expectedCategory = 'office';
+          } else if (tool.slug === 'ppt-to-word') {
+            expectedCategory = 'office';
+          } else {
+            expectedCategory = 'pdf';
+          }
+        } else {
+          expectedCategory = tool.category;
+          if (tool.slug === 'gif-to-video') {
+            expectedCategory = (direction === 'input') ? 'image' : 'video';
+          }
         }
       }
 
-      const safeCategory = expectedCategory === 'pdf' ? 'pdf' : expectedCategory === 'image' ? 'image' : expectedCategory === 'video' ? 'video' : expectedCategory === 'audio' ? 'audio' : null;
+      const safeCategory = ['pdf', 'image', 'video', 'audio', 'office'].includes(expectedCategory) ? expectedCategory : null;
 
       let validationMime = file.mimetype;
       if (safeCategory) {

@@ -923,3 +923,64 @@ html.dark-theme .form-select:focus {
   left: -6px !important;
   bottom: -6px !important;
 }
+
+/* Premium Card Layout Upgrades */
+.card {
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-premium) !important;
+  border-radius: var(--radius-xl) !important;
+  background-color: var(--bg-card) !important;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease !important;
+}
+
+.card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-premium-hover) !important;
+  border-color: var(--brand-primary) !important;
+}
+
+html.dark-theme .card {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark-theme .card:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  background-color: rgba(30, 41, 59, 0.85) !important;
+}
+
+/* Premium File Card Styling */
+.file-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 1rem !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+.file-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark-theme .file-card {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark-theme .file-card:hover {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 4px 10px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.file-card .btn {
+  border-radius: var(--radius-md) !important;
+  font-size: 0.8rem !important;
+  padding: 0.4rem 1.1rem !important;
+  font-weight: 600 !important;
+}

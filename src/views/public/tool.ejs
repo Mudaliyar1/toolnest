@@ -13,6 +13,12 @@
     'pdf-to-image': 'Convert the first page of your PDF file into a high-quality preview PNG image.',
     'image-to-pdf': 'Convert multiple image files (JPG, PNG, WEBP) into a single, clean PDF file.',
     'pdf-page-numbering': 'Add sequential page numbers to your PDF pages automatically.',
+    'pdf-to-word': 'Convert your PDF document into an editable Microsoft Word DOCX file in seconds.',
+    'word-to-pdf': 'Convert your Microsoft Word DOCX or DOC file into a clean, print-ready PDF.',
+    'pdf-to-ppt': 'Convert your PDF document into a slide presentation PowerPoint PPTX file.',
+    'ppt-to-pdf': 'Convert your PowerPoint PPTX slide presentations into standard PDF files.',
+    'word-to-ppt': 'Convert your Microsoft Word DOCX documents into PowerPoint slides.',
+    'ppt-to-word': 'Convert your PowerPoint PPTX slide contents into editable Word documents.',
     'compress-image': 'Reduce image file size by modifying visual quality parameters.',
     'resize-image': 'Change the width and height dimensions of your image in pixels.',
     'crop-image': 'Crop specific rectangular regions from your image by specifying dimensions.',
@@ -97,6 +103,12 @@
         'pdf-to-image': 'Convert a PDF document into high-quality images. Every page of the PDF will be saved as an image so you can easily share or preview them.',
         'image-to-pdf': 'Select one or multiple images (JPG, PNG, WEBP). We will merge and package them into a single, clean PDF file. Perfect for turning photo scans into documents.',
         'pdf-page-numbering': 'Add clean page numbers (like "Page 1 of 5") automatically to the top or bottom of your PDF document. Select positioning and numbering formats easily.',
+        'pdf-to-word': 'Upload a PDF file. We will extract all text and layout data to generate a clean, editable Microsoft Word (.docx) document.',
+        'word-to-pdf': 'Upload a Word (.docx or .doc) document. We will convert it to a print-ready PDF file retaining formatting.',
+        'pdf-to-ppt': 'Upload a PDF file. We will extract the page text and convert each page into a PowerPoint (.pptx) slide.',
+        'ppt-to-pdf': 'Upload a PowerPoint (.pptx or .ppt) presentation. We will render slides into pages and output a standard PDF file.',
+        'word-to-ppt': 'Upload a Word (.docx) document. We will divide the document segments and convert them into PowerPoint slides.',
+        'ppt-to-word': 'Upload a PowerPoint (.pptx) slide presentation. We will extract slide texts and organize them into a clean Word document.',
         'compress-image': 'Reduce the byte size of your image to make it load faster on websites or fit email limits. Customize the quality slider to adjust weight vs clarity.',
         'resize-image': 'Enter a custom width and height in pixels to scale your image up or down. Great for meeting profile picture requirements or reducing image dimensions.',
         'crop-image': 'Drag and adjust the cropping box overlay to select the exact rectangular part of the photo you want to keep, cutting out unwanted borders.',
@@ -185,14 +197,32 @@
                     inside your browser.</div>
                 </div>
                 <% if (['merge-pdf', 'split-pdf' , 'compress-pdf' , 'pdf-page-numbering' , 'image-to-pdf' , 'rotate-pdf'
-                  , 'extract-pages' , 'delete-pages' , 'add-watermark', 'reorder-pages' ].includes(tool.slug)) { %>
+                  , 'extract-pages' , 'delete-pages' , 'add-watermark', 'reorder-pages', 'pdf-to-word', 'word-to-pdf', 'pdf-to-ppt', 'ppt-to-pdf', 'word-to-ppt', 'ppt-to-word' ].includes(tool.slug)) { %>
                   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
                     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
                   <% } %>
-                        <% if (tool.slug==='pdf-to-image' ) { %>
-                          <script src="/vendor/pdfjs/pdf.min.js"></script>
-                          <script src="/vendor/jszip/jszip.min.js"></script>
-                          <% } %>
+                        <% if (tool.slug==='pdf-to-image' || tool.slug==='pdf-to-word' || tool.slug==='pdf-to-ppt' ) { %>
+                           <script src="/vendor/pdfjs/pdf.min.js"></script>
+                           <% if (tool.slug === 'pdf-to-image') { %>
+                             <script src="/vendor/jszip/jszip.min.js"></script>
+                           <% } %>
+                        <% } %>
+                        <% if (['ppt-to-pdf', 'ppt-to-word'].includes(tool.slug)) { %>
+                           <script src="/vendor/pdfjs/pdf.min.js"></script>
+                           <script src="/vendor/jszip/jszip.min.js"></script>
+                        <% } %>
+                        <% if (['pdf-to-word', 'ppt-to-word'].includes(tool.slug)) { %>
+                           <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.js"></script>
+                        <% } %>
+                        <% if (['word-to-pdf', 'ppt-to-pdf'].includes(tool.slug)) { %>
+                           <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+                        <% } %>
+                        <% if (['word-to-pdf', 'word-to-ppt'].includes(tool.slug)) { %>
+                           <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+                        <% } %>
+                        <% if (['pdf-to-ppt', 'word-to-ppt'].includes(tool.slug)) { %>
+                           <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+                        <% } %>
                         <% if (tool.slug === 'crop-image') { %>
                           <link rel="stylesheet" href="/vendor/cropperjs/cropper.min.css">
                           <script src="/vendor/cropperjs/cropper.min.js"></script>
@@ -560,7 +590,9 @@
                                             <% if (['pdf', 'image' , 'video' , 'audio' ].includes(tool.category)) { %>
                                               <% let acceptTypes='' ; if (slug==='image-to-pdf' ) {
                                                 acceptTypes='image/*' ; } else if (slug==='gif-to-video' ) {
-                                                acceptTypes='image/gif,video/*' ; } else if (tool.category==='pdf' ) {
+                                                acceptTypes='image/gif,video/*' ; } else if (['word-to-pdf', 'word-to-ppt'].includes(slug)) {
+                                                acceptTypes='.docx,.doc' ; } else if (['ppt-to-pdf', 'ppt-to-word'].includes(slug)) {
+                                                acceptTypes='.pptx,.ppt' ; } else if (tool.category==='pdf' ) {
                                                 acceptTypes='.pdf' ; } else if (tool.category==='image' ) {
                                                 acceptTypes='image/*' ; } else if (tool.category==='video' ) {
                                                 acceptTypes='video/*' ; } else if (tool.category==='audio' ) {

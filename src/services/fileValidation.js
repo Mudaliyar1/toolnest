@@ -5,14 +5,23 @@ const allowedExtensions = new Map([
   ['pdf', ['.pdf']],
   ['image', ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']],
   ['video', ['.mp4', '.mov', '.webm', '.mkv', '.gif', '.mpeg', '.mpg', '.avi']],
-  ['audio', ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.mpeg', '.mpg', '.mpga', '.mp2']]
+  ['audio', ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.mpeg', '.mpg', '.mpga', '.mp2']],
+  ['office', ['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt']]
 ]);
 
 const allowedMimePrefixes = new Map([
   ['pdf', ['application/pdf']],
   ['image', ['image/']],
   ['video', ['video/', 'audio/', 'image/gif']],
-  ['audio', ['audio/']]
+  ['audio', ['audio/']],
+  ['office', [
+    'application/vnd.openxmlformats-officedocument',
+    'application/msword',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.ms-excel',
+    'application/zip',
+    'application/x-zip-compressed'
+  ]]
 ]);
 
 async function validateUploadedFile(filePath, originalName, category) {
@@ -36,7 +45,7 @@ async function validateUploadedFile(filePath, originalName, category) {
   }
 
   const mimeMatches = safeMimePrefixes.some((prefix) => detectedType.mime.startsWith(prefix));
-  if (!mimeMatches) {
+  if (!mimeMatches && category !== 'office') {
     return { ok: false, reason: 'Unsupported file type.' };
   }
 
