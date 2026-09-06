@@ -18,12 +18,17 @@ mongoose.connection.on('disconnected', () => {
 });
 
 async function connectDb() {
+  if (!process.env.MONGODB_URI) {
+    console.warn('⚠️ WARNING: MONGODB_URI environment variable is not set! Falling back to localhost.');
+  }
+
   try {
     console.log(`Connecting to MongoDB at: ${env.mongoUri ? env.mongoUri.replace(/:([^@]+)@/, ':****@') : 'undefined'}...`);
     await mongoose.connect(env.mongoUri, {
       autoIndex: env.env !== 'production',
       serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000
+      connectTimeoutMS: 8000,
+      family: 4
     });
     return true;
   } catch (error) {
