@@ -63,7 +63,7 @@ const systemSettingsSchema = new mongoose.Schema(
       storageSavingsBytes: { type: Number, default: 0 }
     }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 module.exports = mongoose.model('SystemSettings', systemSettingsSchema);

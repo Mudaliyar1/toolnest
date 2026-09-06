@@ -9,7 +9,7 @@ const adminSchema = new mongoose.Schema(
     lastLoginAt: { type: Date },
     createdAt: { type: Date, default: Date.now }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 module.exports = mongoose.model('Admin', adminSchema);

@@ -8,7 +8,7 @@ const workspaceSchema = new mongoose.Schema(
     expiresAt: { type: Date, required: true },
     lastActivity: { type: Date, default: Date.now, index: true }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 workspaceSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

@@ -8,7 +8,7 @@ const analyticsSchema = new mongoose.Schema(
     averageSessionDuration: { type: Number, default: 0 },
     updatedAt: { type: Date, default: Date.now }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 module.exports = mongoose.model('Analytics', analyticsSchema);

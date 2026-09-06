@@ -16,7 +16,7 @@ const fileSchema = new mongoose.Schema(
     toolName: { type: String, required: true, index: true },
     direction: { type: String, enum: ['input', 'output'], default: 'output' }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 fileSchema.index({ expireTime: 1 }, { expireAfterSeconds: 0 });

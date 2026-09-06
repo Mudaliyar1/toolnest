@@ -9,7 +9,7 @@ const visitorSchema = new mongoose.Schema(
     visitTime: { type: Date, default: Date.now, index: true },
     userAgent: { type: String, default: 'unknown' }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 

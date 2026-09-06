@@ -12,7 +12,7 @@ const securityEventSchema = new mongoose.Schema(
     },
     timestamp: { type: Date, default: Date.now, index: true }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 module.exports = mongoose.model('SecurityEvent', securityEventSchema);

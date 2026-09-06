@@ -1,6 +1,6 @@
-const app = require('./app');
 const env = require('./config/env');
 const { connectDb } = require('./config/db');
+const app = require('./app');
 const { startCleanupScheduler } = require('./jobs/cleanupScheduler');
 
 async function bootstrap() {

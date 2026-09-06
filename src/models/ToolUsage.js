@@ -8,7 +8,7 @@ const toolUsageSchema = new mongoose.Schema(
     monthlyUsage: { type: Number, default: 0 },
     lastUsedAt: { type: Date, default: Date.now }
   },
-  { versionKey: false }
+  { versionKey: false, bufferCommands: false }
 );
 
 module.exports = mongoose.model('ToolUsage', toolUsageSchema);
